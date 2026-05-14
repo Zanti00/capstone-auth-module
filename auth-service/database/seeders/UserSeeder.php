@@ -10,17 +10,18 @@ class UserSeeder extends Seeder
     /**
      * Run the database seeds.
      */
+// UserSeeder.php
+
     public function run(): void
     {
-        $user = \App\Models\User::create([
-            'username' => 'admin',
-            'email' => 'admin@example.com',
-            'is_active' => true,
-        ]);
+        $user = \App\Models\User::firstOrCreate(
+            ['username' => 'admin'],
+            ['email' => 'admin@example.com', 'is_active' => true]
+        );
 
-        \App\Models\UserCredential::create([
-            'user_id' => $user->id,
-            'password_hash' => \Illuminate\Support\Facades\Hash::make('password', ['rounds' => 12]),
-        ]);
+        \App\Models\UserCredential::firstOrCreate(
+            ['user_id' => $user->id],
+            ['password_hash' => \Illuminate\Support\Facades\Hash::make('password', ['rounds' => 12])]
+        );
     }
 }

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import axios from 'axios'
+import { useRouter } from 'vue-router'
+import api from '@/lib/api'
 import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+
+const router = useRouter()
 
 const form = reactive({
   username: '',
@@ -23,16 +26,14 @@ const handleLogin = async () => {
   generalError.value = ''
 
   try {
-    const response = await axios.post('http://localhost:8000/api/login', form, {
-        withCredentials: true
-    })
+    const response = await api.post('/api/login', form)
     
     const { access_token, user } = response.data
     localStorage.setItem('access_token', access_token)
     localStorage.setItem('user', JSON.stringify(user))
     
-    // Redirect or update state
-    alert('Login successful!')
+    // Redirect to admin dashboard
+    router.push('/admin')
   } catch (error: any) {
     if (error.response) {
       if (error.response.status === 422) {
@@ -109,7 +110,7 @@ const handleLogin = async () => {
         </div>
 
         <!-- General Error -->
-        <div v-if="generalError" class="p-3 rounded-md bg-red-50 border border-red-200 text-sm font-medium text-red-600">
+        <div v-if="generalError" class="p-4 rounded-xl bg-red-50 border border-red-100 text-sm font-medium text-red-700 animate-in fade-in slide-in-from-top-1">
           {{ generalError }}
         </div>
 
@@ -117,11 +118,17 @@ const handleLogin = async () => {
         <button
           type="submit"
           :disabled="isLoading"
-          class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-slate-50 hover:bg-slate-900/90 h-10 px-4 py-2 w-full"
+          class="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-slate-50 hover:bg-slate-800 h-12 px-4 py-2 w-full shadow-lg shadow-slate-900/10"
         >
           <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-          {{ isLoading ? 'Logging in...' : 'Sign In' }}
+          {{ isLoading ? 'Signing in...' : 'Sign In' }}
         </button>
+
+        <div class="text-center mt-6">
+          <router-link to="/forgot-password" class="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+            Forgot your password?
+          </router-link>
+        </div>
       </form>
     </div>
   </div>

@@ -8,6 +8,10 @@ use Tests\TestCase;
 
 class DatabaseSchemaTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected $seed = true;
+
     /**
      * A basic feature test example.
      */

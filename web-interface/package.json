@@ -17,7 +17,8 @@
     "shadcn-vue": "^2.7.2",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "vue": "^3.5.34"
+    "vue": "^3.5.34",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@types/node": "^24.12.3",

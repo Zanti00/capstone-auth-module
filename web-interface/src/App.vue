@@ -1,8 +1,3 @@
-<!-- Login Page -->
-<script setup lang="ts">
-import LoginView from './components/LoginView.vue'
-</script>
-
 <template>
-  <LoginView />
+  <router-view />
 </template>

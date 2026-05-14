@@ -10,28 +10,27 @@ class RolePermissionSeeder extends Seeder
     /**
      * Run the database seeds.
      */
+// RolePermissionSeeder.php
+
     public function run(): void
     {
         $roles = [
-            ['name' => 'Super Admin', 'description' => 'System wide access'],
-            ['name' => 'IT Admin', 'description' => 'IT infrastructure and user management'],
-            ['name' => 'Department Manager', 'description' => 'Management of specific department'],
-            ['name' => 'Employee', 'description' => 'Regular staff access'],
+            ['name' => 'Super Admin',         'description' => 'System wide access'],
+            ['name' => 'IT Admin',            'description' => 'IT infrastructure and user management'],
+            ['name' => 'Department Manager',  'description' => 'Management of specific department'],
+            ['name' => 'Employee',            'description' => 'Regular staff access'],
         ];
 
-        foreach ($roles as $role) {
-            \DB::table('roles')->updateOrInsert(['name' => $role['name']], $role);
-        }
+        // insertOrIgnore: skips duplicates instead of crashing
+        \DB::table('roles')->insertOrIgnore($roles);
 
         $permissions = [
-            ['name' => 'View Dashboard', 'slug' => 'view-dashboard'],
-            ['name' => 'Manage Users', 'slug' => 'manage-users'],
-            ['name' => 'Manage Roles', 'slug' => 'manage-roles'],
+            ['name' => 'View Dashboard',  'slug' => 'view-dashboard'],
+            ['name' => 'Manage Users',    'slug' => 'manage_users'],
+            ['name' => 'Manage Roles',    'slug' => 'manage-roles'],
             ['name' => 'View Audit Logs', 'slug' => 'view-audit-logs'],
         ];
 
-        foreach ($permissions as $permission) {
-            \DB::table('permissions')->updateOrInsert(['slug' => $permission['slug']], $permission);
-        }
+        \DB::table('permissions')->insertOrIgnore($permissions);
     }
 }
