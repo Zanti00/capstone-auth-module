@@ -22,5 +22,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::define('manage-users', [AdminPolicy::class, 'manageUsers']);
+        Gate::define('manage-roles', [\App\Policies\RolePolicy::class, 'manage']);
     }
 }

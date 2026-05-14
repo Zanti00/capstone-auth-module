@@ -7,7 +7,8 @@ import {
   Settings,
   Bell,
   Search,
-  UserPlus
+  UserPlus,
+  Shield
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -30,7 +31,7 @@ const handleLogout = () => {
             <span class="text-white font-bold text-xl">A</span>
           </div>
           <div>
-            <h2 class="font-bold text-slate-900 leading-none">Antigravity</h2>
+            <h2 class="font-bold text-slate-900 leading-none">Demo Frontend</h2>
             <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider mt-1">Auth Module</p>
           </div>
         </div>
@@ -62,6 +63,15 @@ const handleLogout = () => {
         >
           <Users :size="20" class="group-hover:scale-110 transition-transform" />
           User Management
+        </router-link>
+
+        <router-link 
+          to="/admin/roles" 
+          class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-all group"
+          active-class="bg-slate-900 !text-white shadow-lg shadow-slate-900/10"
+        >
+          <Shield :size="20" class="group-hover:scale-110 transition-transform" />
+          Role Management
         </router-link>
       </nav>
 

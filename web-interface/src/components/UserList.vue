@@ -10,7 +10,8 @@ import {
   Shield,
   Building2,
   Mail,
-  User as UserIcon
+  User as UserIcon,
+  X
 } from 'lucide-vue-next'
 
 interface Role {
@@ -96,6 +97,34 @@ onMounted(() => {
 watch(filters, () => {
   fetchData(1)
 }, { deep: true })
+
+const showRoleModal = ref(false)
+const selectedUser = ref<User | null>(null)
+const selectedRoleId = ref<number | string>('')
+const isAssigning = ref(false)
+
+const openRoleModal = (user: User) => {
+  selectedUser.value = user
+  selectedRoleId.value = user.profile?.role?.id || ''
+  showRoleModal.value = true
+}
+
+const handleAssignRole = async () => {
+  if (!selectedUser.value || !selectedRoleId.value) return
+  
+  isAssigning.value = true
+  try {
+    await api.patch(`/api/admin/users/${selectedUser.value.id}/role`, {
+      role_id: selectedRoleId.value
+    })
+    showRoleModal.value = false
+    fetchData(pagination.value.current_page)
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Failed to assign role')
+  } finally {
+    isAssigning.value = false
+  }
+}
 </script>
 
 <template>
@@ -217,8 +246,12 @@ watch(filters, () => {
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
-                <button class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
-                  <MoreVertical :size="18" />
+                <button 
+                  @click="openRoleModal(user)"
+                  class="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-all flex items-center gap-2 text-xs font-bold"
+                >
+                  <Shield :size="16" />
+                  Assign Role
                 </button>
               </td>
             </tr>
@@ -257,6 +290,73 @@ watch(filters, () => {
           >
             <ChevronRight :size="16" />
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Assignment Modal -->
+    <div v-if="showRoleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showRoleModal = false"></div>
+      
+      <div class="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Assign Role</h2>
+            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">Updating {{ selectedUser?.username }}</p>
+          </div>
+          <button @click="showRoleModal = false" class="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-xl transition-all shadow-sm">
+            <X :size="20" />
+          </button>
+        </div>
+
+        <div class="p-6 space-y-6">
+          <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center font-bold text-slate-700 shadow-sm border border-slate-200">
+              {{ selectedUser?.username.substring(0, 2).toUpperCase() }}
+            </div>
+            <div>
+              <p class="font-bold text-slate-900">{{ selectedUser?.profile?.first_name }} {{ selectedUser?.profile?.last_name }}</p>
+              <p class="text-xs text-slate-500 font-medium">Current: {{ selectedUser?.profile?.role?.name || 'No Role' }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Select New Role</label>
+            <div class="grid grid-cols-1 gap-2">
+              <button 
+                v-for="role in roles" 
+                :key="role.id"
+                @click="selectedRoleId = role.id"
+                class="flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all group"
+                :class="selectedRoleId === role.id 
+                  ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10' 
+                  : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200'"
+              >
+                <div class="flex items-center gap-3">
+                  <Shield :size="18" :class="selectedRoleId === role.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'" />
+                  <span class="font-bold text-sm">{{ role.name }}</span>
+                </div>
+                <div v-if="selectedRoleId === role.id" class="w-2 h-2 bg-white rounded-full"></div>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2 flex gap-3">
+            <button 
+              @click="showRoleModal = false"
+              class="flex-1 px-6 py-3 border-2 border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all"
+            >
+              Cancel
+            </button>
+            <button 
+              @click="handleAssignRole"
+              :disabled="isAssigning || !selectedRoleId"
+              class="flex-1 px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
+            >
+              <Loader2 v-if="isAssigning" class="animate-spin" :size="18" />
+              {{ isAssigning ? 'Updating...' : 'Confirm Assignment' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>

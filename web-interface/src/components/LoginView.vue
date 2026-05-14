@@ -28,8 +28,9 @@ const handleLogin = async () => {
   try {
     const response = await api.post('/api/login', form)
     
-    const { access_token, user } = response.data
+    const { access_token, user, session_id } = response.data
     localStorage.setItem('access_token', access_token)
+    localStorage.setItem('session_id', session_id)
     localStorage.setItem('user', JSON.stringify(user))
     
     // Redirect to admin dashboard

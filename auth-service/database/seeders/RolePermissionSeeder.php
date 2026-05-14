@@ -26,11 +26,26 @@ class RolePermissionSeeder extends Seeder
 
         $permissions = [
             ['name' => 'View Dashboard',  'slug' => 'view-dashboard'],
-            ['name' => 'Manage Users',    'slug' => 'manage_users'],
+            ['name' => 'Manage Users',    'slug' => 'manage-users'],
             ['name' => 'Manage Roles',    'slug' => 'manage-roles'],
             ['name' => 'View Audit Logs', 'slug' => 'view-audit-logs'],
         ];
 
         \DB::table('permissions')->insertOrIgnore($permissions);
+
+        // Link management permissions to Admin roles
+        $adminRoles = \DB::table('roles')->whereIn('name', ['Super Admin', 'IT Admin'])->pluck('id');
+        $managementPermissions = \DB::table('permissions')
+            ->whereIn('slug', ['manage-users', 'manage-roles', 'view-audit-logs'])
+            ->pluck('id');
+
+        foreach ($adminRoles as $roleId) {
+            foreach ($managementPermissions as $permissionId) {
+                \DB::table('role_permission')->insertOrIgnore([
+                    'role_id' => $roleId,
+                    'permission_id' => $permissionId
+                ]);
+            }
+        }
     }
 }

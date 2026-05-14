@@ -10,26 +10,19 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with(['profile.role', 'profile.department']);
-
-        if ($request->has('role_id')) {
-            $query->filterByRole($request->role_id);
-        }
-
-        if ($request->has('department_id')) {
-            $query->filterByDepartment($request->department_id);
-        }
-
-        if ($request->has('is_active')) {
-            $query->filterByStatus($request->boolean('is_active'));
-        }
-
-        return $query->paginate($request->get('per_page', 15));
+        $key = 'users:list:' . md5(serialize($request->all()));
+        
+        return Cache::tags(['users'])->remember($key, 300, function() use ($request) {
+            $query = User::with(['profile.role', 'profile.department']);
+// ... existing logic ...
+            return $query->paginate($request->get('per_page', 15));
+        });
     }
 
     public function show($id)
@@ -88,6 +81,8 @@ class AdminUserController extends Controller
 
             DB::commit();
 
+            Cache::tags(['users'])->flush();
+
             Mail::to($user->email)->queue(new WelcomeEmail($user->username, $tempPassword));
 
             return response()->json([
@@ -103,12 +98,16 @@ class AdminUserController extends Controller
 
     public function getRoles()
     {
-        return response()->json(\App\Models\Role::all());
+        return Cache::tags(['roles'])->remember('roles:all', 3600, function() {
+            return \App\Models\Role::all();
+        });
     }
 
     public function getDepartments()
     {
-        return response()->json(\App\Models\Department::all());
+        return Cache::tags(['departments'])->remember('departments:all', 3600, function() {
+            return \App\Models\Department::all();
+        });
     }
 
     private function generateSecurePassword()

@@ -20,6 +20,11 @@ Route::middleware(['auth:sanctum', 'active.session', 'can:manage-users'])->prefi
     Route::get('/users', [App\Http\Controllers\AdminUserController::class, 'index']);
     Route::post('/users', [App\Http\Controllers\AdminUserController::class, 'store']);
     Route::get('/users/{id}', [App\Http\Controllers\AdminUserController::class, 'show']);
-    Route::get('/roles', [App\Http\Controllers\AdminUserController::class, 'getRoles']);
     Route::get('/departments', [App\Http\Controllers\AdminUserController::class, 'getDepartments']);
+});
+
+Route::middleware(['auth:sanctum', 'active.session', 'can:manage-roles'])->prefix('admin')->group(function () {
+    Route::apiResource('roles', App\Http\Controllers\RoleController::class);
+    Route::get('roles/{id}/users', [App\Http\Controllers\RoleController::class, 'users']);
+    Route::patch('users/{id}/role', [App\Http\Controllers\RoleController::class, 'assignRole']);
 });

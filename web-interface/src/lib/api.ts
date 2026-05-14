@@ -12,9 +12,16 @@ const api = axios.create({
 // You can add interceptors here later (e.g., for automatic token handling)
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
+  const sessionId = localStorage.getItem('session_id')
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
+  if (sessionId) {
+    config.headers['X-Session-ID'] = sessionId
+  }
+
   return config
 })
 

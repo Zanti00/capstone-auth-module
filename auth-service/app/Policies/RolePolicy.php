@@ -3,30 +3,29 @@
 namespace App\Policies;
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
-class AdminPolicy
+class RolePolicy
 {
     /**
-     * Determine whether the user can manage users.
+     * Determine whether the user can manage roles.
      */
-    public function manageUsers(User $user): bool
+    public function manage(User $user): bool
     {
         if (!$user->profile || !$user->profile->role_id) {
             return false;
         }
-        
-        $role = \DB::table('roles')->where('id', $user->profile->role_id)->first();
+
+        $role = DB::table('roles')->where('id', $user->profile->role_id)->first();
         
         if ($role && $role->name === 'Super Admin') {
             return true;
         }
 
-        $hasPermission = \Illuminate\Support\Facades\DB::table('role_permission')
+        return DB::table('role_permission')
             ->join('permissions', 'role_permission.permission_id', '=', 'permissions.id')
             ->where('role_permission.role_id', $user->profile->role_id)
-            ->where('permissions.slug', 'manage-users')
+            ->where('permissions.slug', 'manage-roles')
             ->exists();
-
-        return $hasPermission;
     }
 }

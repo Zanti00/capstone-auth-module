@@ -23,5 +23,18 @@ class UserSeeder extends Seeder
             ['user_id' => $user->id],
             ['password_hash' => \Illuminate\Support\Facades\Hash::make('password', ['rounds' => 12])]
         );
+
+        $itAdminRole = \App\Models\Role::where('name', 'IT Admin')->first();
+        if ($itAdminRole) {
+            \App\Models\UserProfile::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'first_name' => 'System',
+                    'last_name' => 'Administrator',
+                    'role_id' => $itAdminRole->id,
+                    'department_id' => \App\Models\Department::first()?->id ?? 1
+                ]
+            );
+        }
     }
 }

@@ -32,6 +32,11 @@ const routes = [
         path: 'users/create',
         name: 'admin-user-create',
         component: () => import('../components/UserCreate.vue')
+      },
+      {
+        path: 'roles',
+        name: 'admin-role-management',
+        component: () => import('../components/RoleManagement.vue')
       }
     ]
   }
