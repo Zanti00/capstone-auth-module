@@ -15,7 +15,6 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $user = \App\Models\User::firstOrCreate(
-            ['username' => 'admin'],
             ['email' => 'admin@example.com', 'is_active' => true]
         );
 

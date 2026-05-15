@@ -9,22 +9,18 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeEmail extends Mailable implements ShouldQueue
+class VerifyEmail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $email;
-    public $password;
     public $url;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $email, string $password)
+    public function __construct($url)
     {
-        $this->email = $email;
-        $this->password = $password;
-        $this->url = env('FRONTEND_URL', 'http://localhost:5173');
+        $this->url = $url;
     }
 
     /**
@@ -33,7 +29,7 @@ class WelcomeEmail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to ' . config('app.name'),
+            subject: 'Verify Your Email Address',
         );
     }
 
@@ -43,7 +39,7 @@ class WelcomeEmail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.auth.welcome',
+            markdown: 'emails.verify-email',
         );
     }
 

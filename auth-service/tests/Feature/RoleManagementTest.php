@@ -27,7 +27,7 @@ class RoleManagementTest extends TestCase
         $itAdminRole = Role::create(['name' => 'IT Admin', 'description' => 'IT Admin Role']);
         $this->manageRolesPermission = Permission::create(['name' => 'Manage Roles', 'slug' => 'manage-roles']);
         
-        DB::table('permission_role')->insert([
+        DB::table('role_permission')->insert([
             'role_id' => $itAdminRole->id,
             'permission_id' => $this->manageRolesPermission->id
         ]);

@@ -9,15 +9,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class RoleController extends Controller
 {
     public function index()
     {
         Gate::authorize('manage-roles');
-        return Cache::remember('roles:list', 3600, function () {
-            return Role::withCount('users')->get();
-        });
+        try {
+            $roles = Cache::remember('roles:list', 3600, function () {
+                return Role::withCount('users')->get()->toArray(); // toArray() before caching
+            });
+            return response()->json($roles);
+        } catch (\Exception $e) {
+            Log::warning('Cache unavailable for roles:list, querying DB directly', ['error' => $e->getMessage()]);
+            return response()->json(Role::withCount('users')->get());
+        }
     }
 
     public function store(Request $request)
@@ -30,7 +37,8 @@ class RoleController extends Controller
         ]);
 
         $role = Role::create($validated);
-        Cache::forget('roles:list');
+
+        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
 
         $this->logAudit($request, 'ROLE_CREATED', "Created role: {$role->name}");
 
@@ -40,7 +48,7 @@ class RoleController extends Controller
     public function show($id)
     {
         Gate::authorize('manage-roles');
-        return Role::withCount('users')->findOrFail($id);
+        return response()->json(Role::withCount('users')->findOrFail($id));
     }
 
     public function update(Request $request, $id)
@@ -55,7 +63,8 @@ class RoleController extends Controller
         ]);
 
         $role->update($validated);
-        Cache::forget('roles:list');
+
+        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
 
         $this->logAudit($request, 'ROLE_UPDATED', "Updated role: {$role->name}");
 
@@ -77,7 +86,8 @@ class RoleController extends Controller
 
         $roleName = $role->name;
         $role->delete();
-        Cache::forget('roles:list');
+
+        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
 
         $this->logAudit($request, 'ROLE_DELETED', "Deleted role: {$roleName}");
 
@@ -87,11 +97,11 @@ class RoleController extends Controller
     public function users($id)
     {
         Gate::authorize('manage-roles');
-        $role = Role::findOrFail($id);
-        
-        return User::whereHas('profile', function ($query) use ($id) {
-            $query->where('role_id', $id);
-        })->with(['profile.department'])->paginate(15);
+        return response()->json(
+            User::whereHas('profile', function ($query) use ($id) {
+                $query->where('role_id', $id);
+            })->with(['profile.department'])->paginate(15)
+        );
     }
 
     public function assignRole(Request $request, $userId)
@@ -114,7 +124,11 @@ class RoleController extends Controller
             $profile->update(['role_id' => $role->id]);
 
             // Invalidate permission cache
-            Cache::store('database')->forget("permissions:user:{$user->id}");
+            try {
+                Cache::store('database')->forget("permissions:user:{$user->id}");
+            } catch (\Exception $e) {
+                Log::warning('Failed to invalidate permission cache', ['error' => $e->getMessage()]);
+            }
 
             $this->logAudit($request, 'ROLE_ASSIGNED', "Assigned role {$role->name} to user {$user->username} (was {$oldRoleName})");
 
@@ -156,7 +170,11 @@ class RoleController extends Controller
         })->pluck('id');
 
         foreach ($userIds as $userId) {
-            Cache::store('database')->forget("permissions:user:{$userId}");
+            try {
+                Cache::store('database')->forget("permissions:user:{$userId}");
+            } catch (\Exception $e) {
+                Log::warning('Failed to invalidate permission cache', ['user_id' => $userId, 'error' => $e->getMessage()]);
+            }
         }
 
         $this->logAudit($request, 'ROLE_PERMISSIONS_UPDATED', "Updated permissions for role: {$role->name}");

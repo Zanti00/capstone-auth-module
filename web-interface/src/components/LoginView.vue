@@ -7,7 +7,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 const router = useRouter()
 
 const form = reactive({
-  username: '',
+  email: '',
   password: ''
 })
 
@@ -62,22 +62,22 @@ const handleLogin = async () => {
       </div>
 
       <form @submit.prevent="handleLogin" class="space-y-6">
-        <!-- Username Field -->
+        <!-- Email Field -->
         <div class="space-y-2">
-          <label for="username" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-            Username
+          <label for="email" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Email Address
           </label>
           <input
-            id="username"
-            v-model="form.username"
-            type="text"
-            placeholder="johndoe"
+            id="email"
+            v-model="form.email"
+            type="email"
+            placeholder="name@example.com"
             class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            :class="{ 'border-red-500': errors.username }"
+            :class="{ 'border-red-500': errors.email }"
             required
           />
-          <p v-if="errors.username" class="text-sm font-medium text-red-500">
-            {{ errors.username[0] }}
+          <p v-if="errors.email" class="text-sm font-medium text-red-500">
+            {{ errors.email[0] }}
           </p>
         </div>
 

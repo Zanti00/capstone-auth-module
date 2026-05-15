@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Mail\PasswordResetMail;
+use App\Mail\VerifyEmail;
+use App\Models\EmailVerificationToken;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\ResetPasswordRequest;
 
@@ -18,21 +20,21 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'username' => 'required|string',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
-        $throttleKey = 'login:' . Str::lower($request->username) . '|' . $request->ip();
+        $throttleKey = 'login:' . Str::lower($request->email) . '|' . $request->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             return response()->json([
                 'message' => 'Too many login attempts. Please try again in ' . ceil($seconds / 60) . ' minutes.',
-                'errors' => ['username' => ['Account temporarily locked.']]
+                'errors' => ['email' => ['Account temporarily locked.']]
             ], 429);
         }
 
-        $user = User::where('username', $request->username)->first();
+        $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->credentials->password_hash)) {
             RateLimiter::hit($throttleKey, 900); // 15 minutes lockout
@@ -40,7 +42,7 @@ class AuthController extends Controller
             DB::table('audit_logs')->insert([
                 'actor_id' => $user ? $user->id : null,
                 'action' => 'LOGIN_FAILED',
-                'description' => 'Failed login attempt for username: ' . $request->username,
+                'description' => 'Failed login attempt for email: ' . $request->email,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'action_date' => now(),
@@ -49,7 +51,7 @@ class AuthController extends Controller
             ]);
 
             throw ValidationException::withMessages([
-                'username' => ['Invalid username or password.'],
+                'email' => ['Invalid email or password.'],
             ]);
         }
 
@@ -59,37 +61,43 @@ class AuthController extends Controller
         $accessToken = $user->createToken('auth_token')->plainTextToken;
         $refreshTokenPlain = Str::random(128);
         $refreshTokenHash = hash('sha256', $refreshTokenPlain);
-
-        DB::table('refresh_tokens')->insert([
-            'user_id' => $user->id,
-            'token_hash' => $refreshTokenHash,
-            'ip_address' => $request->ip(),
-            'device_info' => $request->userAgent(),
-            'expires_at' => now()->addDays(30),
-            'created_at' => now(),
-        ]);
-
         $sessionId = (string) Str::uuid();
-        DB::table('user_sessions')->insert([
-            'user_id' => $user->id,
-            'session_id' => $sessionId,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'last_active_at' => now(),
-            'is_active' => true,
-            'created_at' => now(),
-        ]);
 
-        DB::table('audit_logs')->insert([
-            'actor_id' => $user->id,
-            'action' => 'LOGIN_SUCCESS',
-            'description' => 'Successful login for username: ' . $request->username,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'action_date' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $ip = $request->ip();
+        $userAgent = $request->userAgent();
+        $email = $request->email;
+
+        defer(function () use ($user, $refreshTokenHash, $ip, $userAgent, $sessionId, $email) {
+            DB::table('refresh_tokens')->insert([
+                'user_id' => $user->id,
+                'token_hash' => $refreshTokenHash,
+                'ip_address' => $ip,
+                'device_info' => $userAgent,
+                'expires_at' => now()->addDays(30),
+                'created_at' => now(),
+            ]);
+
+            DB::table('user_sessions')->insert([
+                'user_id' => $user->id,
+                'session_id' => $sessionId,
+                'ip_address' => $ip,
+                'user_agent' => $userAgent,
+                'last_active_at' => now(),
+                'is_active' => true,
+                'created_at' => now(),
+            ]);
+
+            DB::table('audit_logs')->insert([
+                'actor_id' => $user->id,
+                'action' => 'LOGIN_SUCCESS',
+                'description' => 'Successful login for email: ' . $email,
+                'ip_address' => $ip,
+                'user_agent' => $userAgent,
+                'action_date' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
 
         return response()->json([
             'access_token' => $accessToken,
@@ -310,5 +318,123 @@ class AuthController extends Controller
         });
 
         return response()->json(['message' => 'Password has been successfully reset.']);
+    }
+
+    public function sendVerification(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->email_verified) {
+            return response()->json(['message' => 'Email already verified.'], 400);
+        }
+
+        $rateLimitKey = "email_verify:{$user->id}";
+        $windowStart = now()->subHours(24);
+
+        $hits = DB::table('rate_limit_log')
+            ->where('key', $rateLimitKey)
+            ->where('window_start', '>=', $windowStart)
+            ->count();
+
+        if ($hits >= 3) {
+            return response()->json(['message' => 'Too many verification attempts. Please try again later.'], 429);
+        }
+
+        DB::table('rate_limit_log')->insert([
+            'key' => $rateLimitKey,
+            'hits' => 1,
+            'window_start' => now()
+        ]);
+
+        $tokenPlain = Str::random(64);
+        $tokenHash = hash('sha256', $tokenPlain);
+
+        EmailVerificationToken::create([
+            'user_id' => $user->id,
+            'token_hash' => $tokenHash,
+            'expires_at' => now()->addHours(24),
+        ]);
+
+        $url = config('app.frontend_url', 'http://localhost:5173') . '/verify-email?token=' . $tokenPlain;
+        Mail::to($user->email)->queue(new VerifyEmail($url));
+
+        return response()->json(['message' => 'Verification email sent.']);
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string'
+        ]);
+
+        $tokenHash = hash('sha256', $request->token);
+
+        $tokenRecord = EmailVerificationToken::where('token_hash', $tokenHash)
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$tokenRecord) {
+            return response()->json(['message' => 'Invalid or expired verification token.'], 400);
+        }
+
+        $user = User::find($tokenRecord->user_id);
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 400);
+        }
+
+        if ($user->email_verified) {
+            return response()->json(['message' => 'Email already verified.'], 200);
+        }
+
+        DB::transaction(function () use ($user, $tokenRecord) {
+            $user->update([
+                'email_verified' => true,
+                'email_verified_at' => now(),
+            ]);
+
+            $tokenRecord->update([
+                'used_at' => now(),
+            ]);
+        });
+
+        return response()->json(['message' => 'Email verified successfully.']);
+    }
+
+    /**
+     * Internal endpoint for other services to verify a token.
+     * Expects { "token": "..." } in encrypted payload.
+     */
+    public function verifyToken(Request $request)
+    {
+        $request->validate(['token' => 'required|string']);
+
+        // Sanctum uses | to separate ID from token
+        $token = $request->token;
+        if (str_contains($token, '|')) {
+            $token = explode('|', $token)[1];
+        }
+
+        $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+
+        if (!$accessToken || ($accessToken->expires_at && $accessToken->expires_at->isPast())) {
+            return response()->json(['valid' => false, 'message' => 'Invalid or expired token.'], 401);
+        }
+
+        $user = $accessToken->tokenable->load(['profile.role.permissions', 'profile.department']);
+
+        return response()->json([
+            'valid' => true,
+            'user' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'first_name' => $user->profile->first_name,
+                'last_name' => $user->profile->last_name,
+                'role' => $user->profile->role->name,
+                'department' => $user->profile->department->name,
+                'permissions' => $user->profile->role->permissions->pluck('slug')
+            ]
+        ]);
     }
 }

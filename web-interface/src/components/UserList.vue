@@ -26,7 +26,6 @@ interface Department {
 
 interface User {
   id: number
-  username: string
   email: string
   is_active: boolean
   profile?: {
@@ -79,7 +78,7 @@ const fetchData = async (page = 1) => {
 const fetchMetadata = async () => {
   try {
     const [rolesRes, deptsRes] = await Promise.all([
-      api.get('/api/admin/roles'),
+      api.get('/api/admin/role-options'),
       api.get('/api/admin/departments')
     ])
     roles.value = rolesRes.data
@@ -212,7 +211,7 @@ const handleAssignRole = async () => {
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200">
-                    {{ user.username.substring(0, 2).toUpperCase() }}
+                    {{ (user.profile?.first_name || 'U').substring(0, 1).toUpperCase() }}{{ (user.profile?.last_name || '').substring(0, 1).toUpperCase() }}
                   </div>
                   <div>
                     <p class="text-sm font-bold text-slate-900 leading-tight">
@@ -302,7 +301,7 @@ const handleAssignRole = async () => {
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
             <h2 class="text-xl font-bold text-slate-900">Assign Role</h2>
-            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">Updating {{ selectedUser?.username }}</p>
+            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">Updating {{ selectedUser?.email }}</p>
           </div>
           <button @click="showRoleModal = false" class="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-xl transition-all shadow-sm">
             <X :size="20" />
@@ -312,7 +311,7 @@ const handleAssignRole = async () => {
         <div class="p-6 space-y-6">
           <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
             <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center font-bold text-slate-700 shadow-sm border border-slate-200">
-              {{ selectedUser?.username.substring(0, 2).toUpperCase() }}
+              {{ (selectedUser?.profile?.first_name || 'U').substring(0, 1).toUpperCase() }}{{ (selectedUser?.profile?.last_name || '').substring(0, 1).toUpperCase() }}
             </div>
             <div>
               <p class="font-bold text-slate-900">{{ selectedUser?.profile?.first_name }} {{ selectedUser?.profile?.last_name }}</p>

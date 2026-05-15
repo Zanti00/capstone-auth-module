@@ -8,22 +8,20 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * This migration is intentionally a no-op.
+     * The role_permission pivot table (created in 2026_01_01_000004) is
+     * the canonical pivot table used by Role and Permission models.
+     * This migration previously created a duplicate 'permission_role' table
+     * which caused confusion and data inconsistency.
      */
     public function up(): void
     {
-        Schema::create('permission_role', function (Blueprint $table) {
-            $table->foreignId('role_id')
-                ->constrained()
-                ->onDelete('cascade');
-            $table->foreignId('permission_id')
-                ->constrained()
-                ->onDelete('cascade');
-            $table->primary(['role_id', 'permission_id']);
-        });
+        // No-op: role_permission table already handles this relationship
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('permission_role');
+        // No-op
     }
 };

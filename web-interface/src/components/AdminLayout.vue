@@ -9,7 +9,8 @@ import {
   Search,
   UserPlus,
   Shield,
-  Key
+  Key,
+  Building2
 } from 'lucide-vue-next'
 
 import { onMounted, onUnmounted } from 'vue'
@@ -110,6 +111,15 @@ onUnmounted(() => {
           <Key :size="20" class="group-hover:scale-110 transition-transform" />
           Permission Management
         </router-link>
+
+        <router-link 
+          to="/admin/departments" 
+          class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-all group"
+          active-class="bg-slate-900 !text-white shadow-lg shadow-slate-900/10"
+        >
+          <Building2 :size="20" class="group-hover:scale-110 transition-transform" />
+          Department Management
+        </router-link>
       </nav>
 
       <div class="p-4 border-t border-slate-100">
@@ -146,11 +156,11 @@ onUnmounted(() => {
           
           <div class="flex items-center gap-3">
             <div class="text-right hidden sm:block">
-              <p class="text-sm font-bold text-slate-900 leading-none">{{ user.username }}</p>
+              <p class="text-sm font-bold text-slate-900 leading-none">{{ user.email }}</p>
               <p class="text-[11px] text-slate-500 font-medium mt-1">IT Administrator</p>
             </div>
             <div class="w-10 h-10 bg-gradient-to-tr from-slate-200 to-slate-100 rounded-xl border border-slate-200 flex items-center justify-center font-bold text-slate-700 shadow-sm">
-              {{ user.username?.substring(0, 2).toUpperCase() }}
+              {{ user.email?.substring(0, 2).toUpperCase() }}
             </div>
           </div>
         </div>

@@ -9,7 +9,9 @@ const api = axios.create({
   }
 })
 
-// You can add interceptors here later (e.g., for automatic token handling)
+import { encryptPayload } from './encryption'
+
+// Request interceptor for auth tokens and encryption
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   const sessionId = localStorage.getItem('session_id')
@@ -20,6 +22,18 @@ api.interceptors.request.use((config) => {
 
   if (sessionId) {
     config.headers['X-Session-ID'] = sessionId
+  }
+
+  // Payload Encryption for POST, PUT, PATCH
+  const methodsWithBody = ['post', 'put', 'patch']
+  if (config.method && methodsWithBody.includes(config.method.toLowerCase()) && config.data) {
+    try {
+      config.data = encryptPayload(config.data)
+      config.headers['X-Encrypted'] = 'true'
+      config.headers['Content-Type'] = 'text/plain' // Send as raw string
+    } catch (err) {
+      console.error('Encryption failed, sending as plaintext', err)
+    }
   }
 
   return config

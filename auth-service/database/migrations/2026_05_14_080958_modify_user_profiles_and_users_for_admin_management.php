@@ -25,7 +25,7 @@ return new class extends Migration
         // Insert permission for user management
         DB::table('permissions')->insertOrIgnore([
             'name' => 'Manage Users',
-            'slug' => 'manage_users',
+            'slug' => 'manage-users',
             'description' => 'Can create, view, and manage system users.',
             'created_at' => now(),
             'updated_at' => now(),
@@ -33,7 +33,7 @@ return new class extends Migration
         
         // Link to IT Admin role
         $role = DB::table('roles')->where('name', 'IT Admin')->first();
-        $permission = DB::table('permissions')->where('slug', 'manage_users')->first();
+        $permission = DB::table('permissions')->where('slug', 'manage-users')->first();
         
         if ($role && $permission) {
             DB::table('role_permission')->insertOrIgnore([
@@ -60,6 +60,6 @@ return new class extends Migration
             $table->foreignId('department_id')->nullable()->constrained()->onDelete('set null');
         });
         
-        DB::table('permissions')->where('slug', 'manage_users')->delete();
+        DB::table('permissions')->where('slug', 'manage-users')->delete();
     }
 };

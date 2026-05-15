@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class PermissionController extends Controller
 {
@@ -93,7 +94,6 @@ class PermissionController extends Controller
         $permission->roles()->sync($request->role_ids);
 
         // Invalidate cache for all users who have this permission (either now or previously)
-        // For simplicity, we can invalidate for all users in the affected roles
         $this->invalidateAffectedUsers($permission);
 
         $this->logAudit($request, 'PERMISSION_ROLES_UPDATED', "Updated roles for permission: {$permission->name}");
@@ -103,12 +103,16 @@ class PermissionController extends Controller
 
     private function invalidateAffectedUsers(Permission $permission)
     {
-        $userIds = \App\Models\User::whereHas('profile.role.permissions', function ($query) use ($permission) {
-            $query->where('permissions.id', $permission->id);
-        })->pluck('id');
+        try {
+            $userIds = \App\Models\User::whereHas('profile.role.permissions', function ($query) use ($permission) {
+                $query->where('permissions.id', $permission->id);
+            })->pluck('id');
 
-        foreach ($userIds as $userId) {
-            \Illuminate\Support\Facades\Cache::store('database')->forget("permissions:user:{$userId}");
+            foreach ($userIds as $userId) {
+                \Illuminate\Support\Facades\Cache::store('database')->forget("permissions:user:{$userId}");
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to invalidate user permission cache', ['error' => $e->getMessage()]);
         }
     }
 

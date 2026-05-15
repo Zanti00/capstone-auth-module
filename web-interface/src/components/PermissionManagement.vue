@@ -67,7 +67,7 @@ const openAssignModal = async (permission: Permission) => {
   try {
     // Fetch all roles if not already fetched
     if (roles.value.length === 0) {
-      const rolesRes = await api.get('/api/admin/roles')
+      const rolesRes = await api.get('/api/admin/role-options')
       roles.value = rolesRes.data
     }
 

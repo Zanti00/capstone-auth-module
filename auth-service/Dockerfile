@@ -12,8 +12,11 @@ RUN apk add --no-cache \
     freetype-dev \
     icu-dev \
     netcat-openbsd \
+    linux-headers pcre-dev $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql zip gd intl bcmath opcache \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && { \
         echo 'opcache.enable=1'; \
         echo 'opcache.memory_consumption=128'; \

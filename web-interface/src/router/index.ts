@@ -18,6 +18,11 @@ const routes = [
     component: () => import('../components/ResetPassword.vue')
   },
   {
+    path: '/verify-email',
+    name: 'verify-email',
+    component: () => import('../components/EmailVerification.vue')
+  },
+  {
     path: '/admin',
     component: () => import('../components/AdminLayout.vue'),
     redirect: '/admin/users',
@@ -42,6 +47,11 @@ const routes = [
         path: 'permissions',
         name: 'admin-permission-management',
         component: () => import('../components/PermissionManagement.vue')
+      },
+      {
+        path: 'departments',
+        name: 'admin-department-management',
+        component: () => import('../components/DepartmentManagement.vue')
       }
     ]
   }

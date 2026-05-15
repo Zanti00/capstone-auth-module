@@ -9,6 +9,9 @@ done
 echo "Database is ready!"
 
 # Clear cache and discover packages
+echo "Clearing cache..."
+php artisan cache:clear
+php artisan optimize:clear
 echo "Discovering packages..."
 php artisan package:discover --ansi
 

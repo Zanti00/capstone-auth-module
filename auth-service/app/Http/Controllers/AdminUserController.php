@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class AdminUserController extends Controller
 {
@@ -19,11 +20,45 @@ class AdminUserController extends Controller
     {
         $key = 'users:list:' . md5(serialize($request->all()));
         
-        return Cache::remember($key, 300, function() use ($request) {
-            $query = User::with(['profile.role', 'profile.department']);
-// ... existing logic ...
-            return $query->paginate($request->get('per_page', 15));
-        });
+        try {
+            return Cache::remember($key, 300, function() use ($request) {
+                return $this->buildUserQuery($request)->paginate($request->get('per_page', 15));
+            });
+        } catch (\Exception $e) {
+            Log::warning('Cache unavailable for users list, querying DB directly', ['error' => $e->getMessage()]);
+            return $this->buildUserQuery($request)->paginate($request->get('per_page', 15));
+        }
+    }
+
+    private function buildUserQuery(Request $request)
+    {
+        $query = User::with(['profile.role', 'profile.department']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('username', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhereHas('profile', function ($pq) use ($search) {
+                      $pq->where('first_name', 'like', "%{$search}%")
+                         ->orWhere('last_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('role_id')) {
+            $query->filterByRole($request->role_id);
+        }
+
+        if ($request->filled('department_id')) {
+            $query->filterByDepartment($request->department_id);
+        }
+
+        if ($request->filled('is_active')) {
+            $query->filterByStatus($request->is_active);
+        }
+
+        return $query;
     }
 
     public function show($id)
@@ -37,7 +72,6 @@ class AdminUserController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'username' => 'required|string|unique:users,username',
             'role_id' => 'required|exists:roles,id',
             'department_id' => 'required|exists:departments,id',
         ]);
@@ -48,7 +82,6 @@ class AdminUserController extends Controller
             DB::beginTransaction();
 
             $user = User::create([
-                'username' => $validated['username'],
                 'email' => $validated['email'],
                 'is_active' => true,
             ]);
@@ -72,7 +105,7 @@ class AdminUserController extends Controller
             DB::table('audit_logs')->insert([
                 'actor_id' => $request->user()->id ?? null,
                 'action' => 'ACCOUNT_CREATED',
-                'description' => 'Admin created account for ' . $user->username,
+                'description' => 'Admin created account for ' . $user->email,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'action_date' => now(),
@@ -82,11 +115,16 @@ class AdminUserController extends Controller
 
             DB::commit();
 
-            Cache::forget('users:list:*'); // Actually we need to forget the specific key or just clear all users
-            // Since keys are dynamic, we might need a better way, but for now let's just clear
-            Cache::flush(); 
+            // Targeted cache invalidation instead of Cache::flush()
+            try {
+                Cache::forget('roles:list');
+                Cache::forget('roles:all');
+                Cache::forget('departments:all');
+            } catch (\Exception $e) {
+                Log::warning('Failed to invalidate cache after user creation', ['error' => $e->getMessage()]);
+            }
 
-            Mail::to($user->email)->queue(new WelcomeEmail($user->username, $tempPassword));
+            Mail::to($user->email)->queue(new WelcomeEmail($user->email, $tempPassword));
 
             return response()->json([
                 'message' => 'User created successfully.',
@@ -101,16 +139,26 @@ class AdminUserController extends Controller
 
     public function getRoles()
     {
-        return Cache::remember('roles:all', 3600, function() {
-            return \App\Models\Role::all();
-        });
+        try {
+            $roles = Cache::remember('roles:all', 3600, function() {
+                return \App\Models\Role::all()->toArray(); // toArray()
+            });
+            return response()->json($roles);
+        } catch (\Exception $e) {
+            return response()->json(\App\Models\Role::all());
+        }
     }
 
     public function getDepartments()
     {
-        return Cache::remember('departments:all', 3600, function() {
-            return \App\Models\Department::all();
-        });
+        try {
+            $departments = Cache::remember('departments:all', 3600, function() {
+                return \App\Models\Department::all()->toArray(); // toArray()
+            });
+            return response()->json($departments);
+        } catch (\Exception $e) {
+            return response()->json(\App\Models\Department::all());
+        }
     }
 
     public function getUserPermissions($id)
@@ -120,15 +168,25 @@ class AdminUserController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        return \Illuminate\Support\Facades\Cache::store('database')->remember("permissions:user:{$id}", 300, function () use ($id) {
-            $user = User::with('profile.role.permissions')->findOrFail($id);
-            
-            if (!$user->profile || !$user->profile->role) {
-                return [];
-            }
+        try {
+            return Cache::store('database')->remember("permissions:user:{$id}", 300, function () use ($id) {
+                return $this->fetchUserPermissions($id);
+            });
+        } catch (\Exception $e) {
+            Log::warning('Cache unavailable for user permissions, querying DB directly', ['error' => $e->getMessage()]);
+            return $this->fetchUserPermissions($id);
+        }
+    }
 
-            return $user->profile->role->permissions->pluck('slug')->toArray();
-        });
+    private function fetchUserPermissions($id)
+    {
+        $user = User::with('profile.role.permissions')->findOrFail($id);
+        
+        if (!$user->profile || !$user->profile->role) {
+            return [];
+        }
+
+        return $user->profile->role->permissions->pluck('slug')->toArray();
     }
 
     private function generateSecurePassword()

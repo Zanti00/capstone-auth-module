@@ -24,7 +24,6 @@ const generalError = ref('')
 const form = reactive({
   first_name: '',
   last_name: '',
-  username: '',
   email: '',
   role_id: '',
   department_id: ''
@@ -33,7 +32,7 @@ const form = reactive({
 const fetchData = async () => {
   try {
     const [rolesRes, deptsRes] = await Promise.all([
-      api.get('/api/admin/roles'),
+      api.get('/api/admin/role-options'),
       api.get('/api/admin/departments')
     ])
     roles.value = rolesRes.data
@@ -64,7 +63,7 @@ const handleSubmit = async () => {
     if (error.response?.status === 422) {
       errors.value = error.response.data.errors
     } else if (error.response?.status === 409) {
-      errors.value = { username: ['Username or email already exists'] }
+      errors.value = { email: ['Email already exists'] }
     } else {
       generalError.value = error.response?.data?.message || 'Failed to create user.'
     }
@@ -138,18 +137,6 @@ const handleSubmit = async () => {
           <p v-if="errors.email" class="text-[10px] font-bold text-red-500 uppercase tracking-wider">{{ errors.email[0] }}</p>
         </div>
 
-        <div class="space-y-2">
-          <label class="text-sm font-semibold text-slate-700">Username</label>
-          <input 
-            v-model="form.username" 
-            type="text" 
-            placeholder="johndoe"
-            class="flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
-            :class="{ 'border-red-300 bg-red-50': errors.username }"
-            required
-          />
-          <p v-if="errors.username" class="text-[10px] font-bold text-red-500 uppercase tracking-wider">{{ errors.username[0] }}</p>
-        </div>
       </div>
 
       <!-- Right Column: Role & Dept -->
