@@ -4,7 +4,7 @@
 Your account has been successfully created by an administrator.
 
 Here are your temporary login credentials:
-**Username:** {{ $username }}
+**Email:** {{ $email }}
 **Temporary Password:** {{ $password }}
 
 <x-mail::button :url="$url">

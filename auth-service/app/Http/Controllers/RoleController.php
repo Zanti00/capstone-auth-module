@@ -56,6 +56,9 @@ class RoleController extends Controller
         Gate::authorize('manage-roles');
         
         $role = Role::findOrFail($id);
+        
+        $oldName = $role->name;
+        $oldDesc = $role->description;
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:roles,name,' . $id,
@@ -66,7 +69,7 @@ class RoleController extends Controller
 
         try { Cache::forget('roles:list'); } catch (\Exception $e) {}
 
-        $this->logAudit($request, 'ROLE_UPDATED', "Updated role: {$role->name}");
+        $this->logAudit($request, 'ROLE_UPDATED', "Updated role '{$oldName}'. Changes: Name[{$oldName} -> {$role->name}], Description[{$oldDesc} -> {$role->description}]");
 
         return response()->json($role);
     }

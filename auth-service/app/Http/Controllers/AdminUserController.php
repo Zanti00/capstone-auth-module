@@ -18,16 +18,7 @@ class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $key = 'users:list:' . md5(serialize($request->all()));
-        
-        try {
-            return Cache::remember($key, 300, function() use ($request) {
-                return $this->buildUserQuery($request)->paginate($request->get('per_page', 15));
-            });
-        } catch (\Exception $e) {
-            Log::warning('Cache unavailable for users list, querying DB directly', ['error' => $e->getMessage()]);
-            return $this->buildUserQuery($request)->paginate($request->get('per_page', 15));
-        }
+        return $this->buildUserQuery($request)->paginate($request->get('per_page', 15));
     }
 
     private function buildUserQuery(Request $request)
@@ -58,6 +49,18 @@ class AdminUserController extends Controller
             $query->filterByStatus($request->is_active);
         }
 
+        $user = $request->user();
+        if ($user && $user->profile->role->name !== 'IT Admin' && $user->profile->role->name !== 'Super Admin') {
+            if ($user->profile->department->name === 'Finance' && $user->profile->role->name === 'Admin') {
+                $query->whereHas('profile', function($q) use ($user) {
+                    $q->where('department_id', $user->profile->department_id);
+                });
+            } else {
+                // If not IT Admin and not Finance Admin, return nothing or fail
+                $query->where('id', -1);
+            }
+        }
+
         return $query;
     }
 
@@ -69,12 +72,57 @@ class AdminUserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'role_id' => 'required|exists:roles,id',
-            'department_id' => 'required|exists:departments,id',
+            'first_name'      => 'required|string|max:255',
+            'last_name'       => 'required|string|max:255',
+            'email'           => ['required', 'email', 'unique:users,email', 'regex:/@sbsi\.com$/i'],
+            'role_id'         => 'required_without:role_name|nullable|exists:roles,id',
+            'role_name'       => 'required_without:role_id|nullable|string|exists:roles,name',
+            'department_id'   => 'required_without:department_name|nullable|exists:departments,id',
+            'department_name' => 'required_without:department_id|nullable|string|exists:departments,name',
+        ], [
+            'email.unique' => 'An account with this email already exists.',
+            'email.regex'  => 'Email must use the company domain @sbsi.com.',
         ]);
+
+        // Resolve role_name -> role_id
+        if (empty($validated['role_id']) && !empty($validated['role_name'])) {
+            $role = \App\Models\Role::where('name', $validated['role_name'])->first();
+            $validated['role_id'] = $role?->id;
+        }
+
+        // Resolve department_name -> department_id
+        if (empty($validated['department_id']) && !empty($validated['department_name'])) {
+            $dept = \App\Models\Department::where('name', $validated['department_name'])->first();
+            $validated['department_id'] = $dept?->id;
+        }
+
+        if (empty($validated['role_id']) || empty($validated['department_id'])) {
+            return response()->json(['message' => 'Invalid role or department provided.'], 422);
+        }
+
+        $actor = $request->user();
+        $actorProfile = $actor->profile;
+        $actorRole = $actorProfile->role->name ?? '';
+        $actorDept = $actorProfile->department->name ?? '';
+
+        $isITAdmin = in_array($actorRole, ['IT Admin', 'Super Admin']);
+
+        if (!$isITAdmin) {
+            if ($actorDept === 'Finance' && $actorRole === 'Admin') {
+                $financeDept = \App\Models\Department::where('name', 'Finance')->first();
+                if ($financeDept && $validated['department_id'] != $financeDept->id) {
+                    return response()->json(['message' => 'You can only create accounts for the Finance department.'], 403);
+                }
+
+                $allowedRoleNames = ['Manager', 'Employee'];
+                $assignedRole = \App\Models\Role::find($validated['role_id']);
+                if (!$assignedRole || !in_array($assignedRole->name, $allowedRoleNames)) {
+                    return response()->json(['message' => 'You are only authorized to assign Manager or Employee roles.'], 403);
+                }
+            } else {
+                return response()->json(['message' => 'Unauthorized to create accounts.'], 403);
+            }
+        }
 
         $tempPassword = $this->generateSecurePassword();
 
@@ -137,24 +185,51 @@ class AdminUserController extends Controller
         }
     }
 
-    public function getRoles()
+    public function getRoles(Request $request)
     {
         try {
             $roles = Cache::remember('roles:all', 3600, function() {
-                return \App\Models\Role::all()->toArray(); // toArray()
+                return \App\Models\Role::all()->toArray();
             });
+
+            $actor = $request->user();
+            if ($actor && !in_array($actor->profile->role->name, ['IT Admin', 'Super Admin'])) {
+                if ($actor->profile->department->name === 'Finance' && $actor->profile->role->name === 'Admin') {
+                    $allowed = ['Manager', 'Employee'];
+                    $roles = array_filter($roles, function($r) use ($allowed) {
+                        return in_array($r['name'], $allowed);
+                    });
+                    $roles = array_values($roles);
+                } else {
+                    $roles = [];
+                }
+            }
+
             return response()->json($roles);
         } catch (\Exception $e) {
             return response()->json(\App\Models\Role::all());
         }
     }
 
-    public function getDepartments()
+    public function getDepartments(Request $request)
     {
         try {
             $departments = Cache::remember('departments:all', 3600, function() {
-                return \App\Models\Department::all()->toArray(); // toArray()
+                return \App\Models\Department::all()->toArray();
             });
+
+            $actor = $request->user();
+            if ($actor && !in_array($actor->profile->role->name, ['IT Admin', 'Super Admin'])) {
+                if ($actor->profile->department->name === 'Finance' && $actor->profile->role->name === 'Admin') {
+                    $departments = array_filter($departments, function($d) {
+                        return $d['name'] === 'Finance';
+                    });
+                    $departments = array_values($departments);
+                } else {
+                    $departments = [];
+                }
+            }
+
             return response()->json($departments);
         } catch (\Exception $e) {
             return response()->json(\App\Models\Department::all());

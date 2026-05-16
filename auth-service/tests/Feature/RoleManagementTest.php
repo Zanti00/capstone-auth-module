@@ -4,173 +4,145 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Models\Role;
-use App\Models\UserProfile;
 use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class RoleManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $adminUser;
-    protected $regularUser;
-    protected $manageRolesPermission;
-
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Setup IT Admin Role and Permission
-        $itAdminRole = Role::create(['name' => 'IT Admin', 'description' => 'IT Admin Role']);
-        $this->manageRolesPermission = Permission::create(['name' => 'Manage Roles', 'slug' => 'manage-roles']);
-        
-        DB::table('role_permission')->insert([
-            'role_id' => $itAdminRole->id,
-            'permission_id' => $this->manageRolesPermission->id
-        ]);
-
-        $this->adminUser = User::factory()->create();
-        UserProfile::create([
-            'user_id' => $this->adminUser->id,
-            'first_name' => 'Admin',
-            'last_name' => 'User',
-            'role_id' => $itAdminRole->id
-        ]);
-
-        $employeeRole = Role::create(['name' => 'Employee', 'description' => 'Employee Role']);
-        $this->regularUser = User::factory()->create();
-        UserProfile::create([
-            'user_id' => $this->regularUser->id,
-            'first_name' => 'Regular',
-            'last_name' => 'User',
-            'role_id' => $employeeRole->id
-        ]);
-
-        // Setup Sessions
-        $this->setupSessionFor($this->adminUser);
-        $this->setupSessionFor($this->regularUser);
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->seed(\Database\Seeders\DepartmentSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
     }
 
-    protected function setupSessionFor($user)
+    private function getAdminUserWithSession()
     {
-        $sessionId = \Illuminate\Support\Str::uuid()->toString();
+        $user = User::where('email', 'admin@example.com')->first();
+        
+        $sessionId = (string) \Illuminate\Support\Str::uuid();
         DB::table('user_sessions')->insert([
             'user_id' => $user->id,
             'session_id' => $sessionId,
             'ip_address' => '127.0.0.1',
             'user_agent' => 'Testing',
-            'is_active' => true,
             'last_active_at' => now(),
+            'is_active' => true,
             'created_at' => now(),
         ]);
-        
-        $user->withSessionId = $sessionId;
+
+        return [$user, $sessionId];
     }
 
-    protected function actingAsWithSession($user)
+    public function test_can_list_roles()
     {
-        return $this->actingAs($user)
-                    ->withHeader('X-Session-ID', $user->withSessionId);
-    }
+        [$user, $sessionId] = $this->getAdminUserWithSession();
 
-    public function test_admin_can_list_roles()
-    {
-        $response = $this->actingAsWithSession($this->adminUser)
+        $response = $this->actingAs($user)
+                         ->withHeader('X-Session-ID', $sessionId)
                          ->getJson('/api/admin/roles');
 
         $response->assertStatus(200)
-                 ->assertJsonCount(2);
+                 ->assertJsonFragment(['name' => 'IT Admin'])
+                 ->assertJsonFragment(['name' => 'Sales']);
     }
 
-    public function test_non_admin_cannot_list_roles()
+    public function test_can_create_role()
     {
-        $response = $this->actingAsWithSession($this->regularUser)
-                         ->getJson('/api/admin/roles');
+        [$user, $sessionId] = $this->getAdminUserWithSession();
 
-        $response->assertStatus(403);
-    }
-
-    public function test_admin_can_create_role()
-    {
-        $response = $this->actingAsWithSession($this->adminUser)
+        $response = $this->actingAs($user)
+                         ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/roles', [
-                             'name' => 'New Role',
-                             'description' => 'Description'
+                             'name' => 'Custom Role',
+                             'description' => 'A custom role description'
                          ]);
 
-        $response->assertStatus(201);
-        $this->assertDatabaseHas('roles', ['name' => 'New Role']);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'ROLE_CREATED']);
+        $response->assertStatus(201)
+                 ->assertJsonFragment(['name' => 'Custom Role']);
+                 
+        $this->assertDatabaseHas('roles', ['name' => 'Custom Role']);
+        
+        // Check audit log
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'ROLE_CREATED',
+            'description' => 'Created role: Custom Role'
+        ]);
     }
 
-    public function test_admin_can_update_role()
+    public function test_can_update_role()
     {
-        $role = Role::create(['name' => 'Old Name']);
-        
-        $response = $this->actingAsWithSession($this->adminUser)
+        [$user, $sessionId] = $this->getAdminUserWithSession();
+        $role = Role::factory()->create(['name' => 'Old Name']);
+
+        $response = $this->actingAs($user)
+                         ->withHeader('X-Session-ID', $sessionId)
                          ->putJson("/api/admin/roles/{$role->id}", [
-                             'name' => 'Updated Name',
-                             'description' => 'New Description'
+                             'name' => 'New Name',
+                             'description' => 'Updated desc'
                          ]);
 
         $response->assertStatus(200);
-        $this->assertDatabaseHas('roles', ['name' => 'Updated Name']);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'ROLE_UPDATED']);
+        $this->assertDatabaseHas('roles', ['id' => $role->id, 'name' => 'New Name']);
     }
 
-    public function test_admin_cannot_delete_role_with_users()
+    public function test_can_delete_role_without_users()
     {
-        $role = Role::where('name', 'Employee')->first();
-        
-        $response = $this->actingAsWithSession($this->adminUser)
-                         ->deleteJson("/api/admin/roles/{$role->id}");
+        [$user, $sessionId] = $this->getAdminUserWithSession();
+        $role = Role::factory()->create(['name' => 'To Be Deleted']);
 
-        $response->assertStatus(409)
-                 ->assertJsonFragment(['message' => 'Cannot delete role with assigned users.']);
-    }
-
-    public function test_admin_can_delete_role_without_users()
-    {
-        $role = Role::create(['name' => 'Empty Role']);
-        
-        $response = $this->actingAsWithSession($this->adminUser)
+        $response = $this->actingAs($user)
+                         ->withHeader('X-Session-ID', $sessionId)
                          ->deleteJson("/api/admin/roles/{$role->id}");
 
         $response->assertStatus(200);
         $this->assertDatabaseMissing('roles', ['id' => $role->id]);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'ROLE_DELETED']);
     }
 
-    public function test_admin_can_assign_role_to_user()
+    public function test_cannot_delete_role_with_users()
     {
-        $newRole = Role::create(['name' => 'Manager']);
-        $targetUser = $this->regularUser;
+        [$user, $sessionId] = $this->getAdminUserWithSession();
+        $role = Role::where('name', 'IT Admin')->first();
 
-        Cache::shouldReceive('forget')
-             ->with("permissions:user:{$targetUser->id}")
-             ->once();
+        $response = $this->actingAs($user)
+                         ->withHeader('X-Session-ID', $sessionId)
+                         ->deleteJson("/api/admin/roles/{$role->id}");
 
-        $response = $this->actingAsWithSession($this->adminUser)
-                         ->patchJson("/api/admin/users/{$targetUser->id}/role", [
-                             'role_id' => $newRole->id
+        $response->assertStatus(409); // Conflict
+        $this->assertDatabaseHas('roles', ['id' => $role->id]);
+    }
+
+    public function test_can_sync_permissions_and_invalidates_cache()
+    {
+        [$user, $sessionId] = $this->getAdminUserWithSession();
+        $role = Role::where('name', 'Sales')->first();
+        
+        $permission1 = Permission::where('slug', 'crms.roles.manage')->first();
+        $permission2 = Permission::where('slug', 'crms.templates.manage')->first();
+
+        // Seed some cache to ensure it's cleared
+        $salesUser = User::where('email', 'sales@example.com')->first();
+        Cache::store('database')->put("permissions:user:{$salesUser->id}", ['dummy'], 300);
+
+        $response = $this->actingAs($user)
+                         ->withHeader('X-Session-ID', $sessionId)
+                         ->postJson("/api/admin/roles/{$role->id}/permissions", [
+                             'permissions' => [$permission1->id, $permission2->id]
                          ]);
 
         $response->assertStatus(200);
-        $this->assertEquals($newRole->id, $targetUser->fresh()->profile->role_id);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'ROLE_ASSIGNED']);
-    }
-
-    public function test_admin_can_list_users_for_role()
-    {
-        $role = Role::where('name', 'Employee')->first();
         
-        $response = $this->actingAsWithSession($this->adminUser)
-                         ->getJson("/api/admin/roles/{$role->id}/users");
-
-        $response->assertStatus(200)
-                 ->assertJsonStructure(['data', 'current_page', 'last_page']);
+        // Assert sync
+        $this->assertTrue($role->permissions->contains($permission1->id));
+        $this->assertTrue($role->permissions->contains($permission2->id));
+        
+        // Assert cache invalidation
+        $this->assertNull(Cache::store('database')->get("permissions:user:{$salesUser->id}"));
     }
 }

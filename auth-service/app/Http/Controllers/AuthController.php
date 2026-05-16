@@ -19,6 +19,8 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        \Illuminate\Support\Facades\Log::info('Login Attempt Data:', $request->all());
+        
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
@@ -99,11 +101,17 @@ class AuthController extends Controller
             ]);
         });
 
+        // Load permissions for the CRMS system specifically for this response
+        $permissions = $user->profile->role->permissions()
+            ->where('system', 'crms')
+            ->pluck('slug');
+
         return response()->json([
             'access_token' => $accessToken,
             'token_type' => 'Bearer',
             'session_id' => $sessionId,
-            'user' => $user
+            'user' => $user,
+            'permissions' => $permissions
         ])->cookie(
             'refresh_token', 
             $refreshTokenPlain, 
@@ -403,8 +411,25 @@ class AuthController extends Controller
     }
 
     /**
+     * Get permissions for the authenticated user, optionally filtered by system.
+     */
+    public function permissions(Request $request)
+    {
+        $system = $request->query('system');
+        
+        $query = $request->user()->profile->role->permissions();
+        
+        if ($system) {
+            $query->where('system', $system);
+        }
+        
+        return response()->json([
+            'permissions' => $query->pluck('slug')
+        ]);
+    }
+
+    /**
      * Internal endpoint for other services to verify a token.
-     * Expects { "token": "..." } in encrypted payload.
      */
     public function verifyToken(Request $request)
     {

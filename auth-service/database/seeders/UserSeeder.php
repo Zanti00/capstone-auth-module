@@ -40,7 +40,7 @@ class UserSeeder extends Seeder
                 'email' => 'finance@example.com',
                 'first_name' => 'Finance',
                 'last_name' => 'Officer',
-                'role_name' => 'Finance',
+                'role_name' => 'Employee',
                 'department_name' => 'Finance'
             ],
             [
