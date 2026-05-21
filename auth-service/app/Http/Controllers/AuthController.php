@@ -43,7 +43,7 @@ class AuthController extends Controller
 
             DB::table('audit_logs')->insert([
                 'actor_id' => $user ? $user->id : null,
-                'action' => 'LOGIN_FAILED',
+                'action' => 'Login Failed',
                 'description' => 'Failed login attempt for email: ' . $request->email,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
@@ -51,6 +51,14 @@ class AuthController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            if ($user && $user->profile?->department?->name === 'Finance') {
+                $this->pushToCrmsAuditLog('Login Failed', 'Session', $user->id, [
+                    'email' => $request->email,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
 
             throw ValidationException::withMessages([
                 'email' => ['Invalid email or password.'],
@@ -96,7 +104,7 @@ class AuthController extends Controller
         defer(function () use ($user, $ip, $userAgent, $sessionId, $email) {
             DB::table('audit_logs')->insert([
                 'actor_id' => $user->id,
-                'action' => 'LOGIN_SUCCESS',
+                'action' => 'Login Success',
                 'description' => 'Successful login for email: ' . $email,
                 'ip_address' => $ip,
                 'user_agent' => $userAgent,
@@ -104,6 +112,14 @@ class AuthController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            if ($user->profile?->department?->name === 'Finance') {
+                $this->pushToCrmsAuditLog('Login Success', 'Session', $user->id, [
+                    'email' => $email,
+                    'ip_address' => $ip,
+                    'user_agent' => $userAgent,
+                ]);
+            }
         });
 
         // Load permissions for the CRMS system specifically for this response
@@ -221,8 +237,31 @@ class AuthController extends Controller
                 ->update(['is_revoked' => true]);
         }
 
-        if ($request->user()) {
-            $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        if ($user) {
+            $user->load(['profile.department']);
+            $department = $user->profile?->department?->name;
+
+            DB::table('audit_logs')->insert([
+                'actor_id' => $user->id,
+                'action' => 'Logout',
+                'description' => 'User logged out: ' . $user->email,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'action_date' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            if ($department === 'Finance') {
+                $this->pushToCrmsAuditLog('Logout', 'Session', $user->id, [
+                    'email' => $user->email,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            }
+
+            $user->currentAccessToken()->delete();
         }
 
         $sessionId = $request->cookie('session_id') ?? $request->header('X-Session-ID');
@@ -466,5 +505,33 @@ class AuthController extends Controller
                 'permissions' => $user->profile->role->permissions->pluck('slug')
             ]
         ]);
+    }
+
+    /**
+     * Push audit event to CRMS vendor-management service.
+     */
+    private function pushToCrmsAuditLog(string $action, string $entityType, ?int $userId, array $context): void
+    {
+        $url = env('VENDOR_MANAGEMENT_URL', 'http://vendor-management:8000/api') . '/internal/audit-event';
+        $secret = env('INTERNAL_SERVICE_SECRET');
+
+        if (!$secret) {
+            \Illuminate\Support\Facades\Log::warning('INTERNAL_SERVICE_SECRET is not configured. CRMS Audit Log push skipped.');
+            return;
+        }
+
+        try {
+            \Illuminate\Support\Facades\Http::withHeaders([
+                'X-Internal-Secret' => $secret,
+            ])->timeout(2)->connectTimeout(1)->post($url, [
+                'action' => $action,
+                'entity_type' => $entityType,
+                'entity_id' => 0,
+                'user_id' => $userId,
+                'new_data' => $context,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to push audit event to CRMS: ' . $e->getMessage());
+        }
     }
 }

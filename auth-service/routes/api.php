@@ -10,6 +10,7 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 Route::post('/internal/verify-token', [AuthController::class, 'verifyToken']);
+Route::get('/internal/audit-logs', [\App\Http\Controllers\InternalAuditLogController::class, 'index']);
 
 Route::middleware(['auth:sanctum', 'active.session'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
