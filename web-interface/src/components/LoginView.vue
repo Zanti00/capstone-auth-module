@@ -43,7 +43,7 @@ const handleLogin = async () => {
       window.location.href = '/crms/admin/dashboard'
     } else if (roleName === 'Manager') {
       window.location.href = '/crms/manager/dashboard'
-    } else if (roleName === 'Sales' || roleName === 'Employee') {
+    } else if (roleName === 'Sales' || roleName === 'Employee' || roleName === 'Finance') {
       window.location.href = '/crms/sales/dashboard'
     } else {
       generalError.value = 'Unrecognized role. Please contact IT Support.'
