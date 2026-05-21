@@ -268,4 +268,61 @@ class AdminUserController extends Controller
     {
         return Str::random(8) . 'A1!'; // Simple way to meet policy (min 8, 1 uppercase, 1 number, 1 special char)
     }
+
+    public function toggleStatus(Request $request, $id)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        $admin = $request->user();
+        if (!Hash::check($request->password, $admin->credentials->password_hash)) {
+            return response()->json([
+                'message' => 'Invalid password verification.',
+                'errors' => ['password' => ['The provided password is incorrect.']]
+            ], 422);
+        }
+
+        $user = User::findOrFail($id);
+
+        if ($user->id === $admin->id) {
+            return response()->json(['message' => 'You cannot deactivate your own account.'], 422);
+        }
+
+        $newStatus = !$user->is_active;
+
+        try {
+            DB::beginTransaction();
+
+            $user->is_active = $newStatus;
+            $user->save();
+
+            if (!$newStatus) {
+                // Deactivating: revoke sessions and refresh tokens
+                DB::table('user_sessions')->where('user_id', $user->id)->update(['is_active' => false]);
+                DB::table('refresh_tokens')->where('user_id', $user->id)->update(['is_revoked' => true]);
+            }
+
+            DB::table('audit_logs')->insert([
+                'actor_id' => $admin->id,
+                'action' => $newStatus ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+                'description' => ($newStatus ? 'Admin activated account for ' : 'Admin deactivated account for ') . $user->email,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'action_date' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'User status updated successfully.',
+                'user' => $user->load(['profile.role', 'profile.department'])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to update user status.', 'error' => $e->getMessage()], 500);
+        }
+    }
 }

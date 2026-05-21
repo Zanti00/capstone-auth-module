@@ -43,7 +43,7 @@ const routes = [
       {
         path: 'users',
         name: 'admin-user-list',
-        component: () => import('../components/UserList.vue')
+        component: () => import('../components/UserManagement.vue')
       },
       {
         path: 'users/create',
