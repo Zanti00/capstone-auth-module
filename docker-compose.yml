@@ -47,6 +47,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=${REDIS_HOST}
+      - SKIP_MIGRATIONS=true
       - MAIL_MAILER=${MAIL_MAILER}
       - MAIL_SCHEME=${MAIL_SCHEME}
       - MAIL_HOST=${MAIL_HOST}
@@ -75,6 +76,7 @@ services:
       - web-interface-node-modules:/app/node_modules
     environment:
       - VITE_API_URL=http://auth-service:8000
+      - VITE_INTERNAL_ENCRYPTION_KEY=${INTERNAL_ENCRYPTION_KEY}
     depends_on:
       - auth-service
     networks:
