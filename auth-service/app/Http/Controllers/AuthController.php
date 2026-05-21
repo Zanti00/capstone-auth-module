@@ -69,26 +69,31 @@ class AuthController extends Controller
         $userAgent = $request->userAgent();
         $email = $request->email;
 
-        defer(function () use ($user, $refreshTokenHash, $ip, $userAgent, $sessionId, $email) {
-            DB::table('refresh_tokens')->insert([
-                'user_id' => $user->id,
-                'token_hash' => $refreshTokenHash,
-                'ip_address' => $ip,
-                'device_info' => $userAgent,
-                'expires_at' => now()->addDays(30),
-                'created_at' => now(),
-            ]);
+        // Write security-critical records synchronously before sending the response.
+        // defer() is NOT safe here — if the PHP process restarts between the response
+        // being sent and defer() executing, the client holds a refresh_token cookie
+        // with no matching DB record, causing all future requests to fail as "invalid".
+        DB::table('refresh_tokens')->insert([
+            'user_id' => $user->id,
+            'token_hash' => $refreshTokenHash,
+            'ip_address' => $ip,
+            'device_info' => $userAgent,
+            'expires_at' => now()->addDays(30),
+            'created_at' => now(),
+        ]);
 
-            DB::table('user_sessions')->insert([
-                'user_id' => $user->id,
-                'session_id' => $sessionId,
-                'ip_address' => $ip,
-                'user_agent' => $userAgent,
-                'last_active_at' => now(),
-                'is_active' => true,
-                'created_at' => now(),
-            ]);
+        DB::table('user_sessions')->insert([
+            'user_id' => $user->id,
+            'session_id' => $sessionId,
+            'ip_address' => $ip,
+            'user_agent' => $userAgent,
+            'last_active_at' => now(),
+            'is_active' => true,
+            'created_at' => now(),
+        ]);
 
+        // Audit log is non-critical — deferring is fine here.
+        defer(function () use ($user, $ip, $userAgent, $sessionId, $email) {
             DB::table('audit_logs')->insert([
                 'actor_id' => $user->id,
                 'action' => 'LOGIN_SUCCESS',

@@ -47,7 +47,7 @@ class DepartmentManagementTest extends TestCase
         );
         $this->adminUser->refresh();
 
-        $employeeRole = Role::create(['name' => 'Employee', 'description' => 'Employee Role']);
+        $employeeRole = Role::firstOrCreate(['name' => 'Employee'], ['description' => 'Employee Role']);
         $this->regularUser = User::factory()->create();
         UserProfile::updateOrCreate(
             ['user_id' => $this->regularUser->id],
