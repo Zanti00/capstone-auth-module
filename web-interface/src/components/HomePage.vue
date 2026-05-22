@@ -190,9 +190,9 @@ const openModule = (subsystemTitle: string) => {
       router.push('/admin')
     } else if (userRole.value === 'Admin') {
       window.location.href = '/crms/admin/dashboard'
-    } else if (userRole.value === 'Manager') {
+    } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
       window.location.href = '/crms/manager/dashboard'
-    } else if (userRole.value === 'Sales' || userRole.value === 'Employee') {
+    } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
       window.location.href = '/crms/sales/dashboard'
     }
   } else if (subsystemTitle === 'User & Access Management') {
