@@ -172,4 +172,31 @@ class AuthFeaturesTest extends TestCase
         $response->assertStatus(401)
                  ->assertJsonFragment(['message' => 'Session is inactive or invalid.']);
     }
+
+    public function test_session_expiration_due_to_inactivity()
+    {
+        $tokens = $this->getLoginTokens();
+        
+        // Simulating inactivity by backdating `last_active_at` in the database to 121 minutes ago
+        DB::table('user_sessions')
+            ->where('session_id', $tokens['session_id'])
+            ->update(['last_active_at' => now()->subMinutes(121)]);
+            
+        $response = $this->call('GET', '/api/user', [], [
+            'session_id' => $tokens['session_id']
+        ], [], [
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $tokens['access_token'],
+            'HTTP_X_SESSION_ID' => $tokens['session_id']
+        ]);
+        
+        $response->assertStatus(401)
+                 ->assertJsonFragment(['message' => 'Session expired due to inactivity.']);
+                 
+        // Verify that the session has been marked as inactive in the database
+        $this->assertDatabaseHas('user_sessions', [
+            'session_id' => $tokens['session_id'],
+            'is_active' => 0
+        ]);
+    }
 }
