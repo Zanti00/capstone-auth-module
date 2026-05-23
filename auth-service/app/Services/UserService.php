@@ -28,19 +28,22 @@ class UserService
     protected AuditLogRepositoryInterface $auditLogRepo;
     protected RoleRepositoryInterface $roleRepo;
     protected DepartmentRepositoryInterface $departmentRepo;
+    protected InternalAuditService $internalAuditService;
 
     public function __construct(
         UserRepositoryInterface $userRepo,
         SessionRepositoryInterface $sessionRepo,
         AuditLogRepositoryInterface $auditLogRepo,
         RoleRepositoryInterface $roleRepo,
-        DepartmentRepositoryInterface $departmentRepo
+        DepartmentRepositoryInterface $departmentRepo,
+        InternalAuditService $internalAuditService
     ) {
         $this->userRepo = $userRepo;
         $this->sessionRepo = $sessionRepo;
         $this->auditLogRepo = $auditLogRepo;
         $this->roleRepo = $roleRepo;
         $this->departmentRepo = $departmentRepo;
+        $this->internalAuditService = $internalAuditService;
     }
 
     public function paginateUsers(array $filters, int $perPage, ?User $actor): LengthAwarePaginator
@@ -140,6 +143,14 @@ class UserService
                 $userAgent
             );
 
+            $this->internalAuditService->pushEvent(
+                'user_created',
+                'User',
+                $user->id,
+                ['email' => $user->email, 'first_name' => $validated['first_name'], 'last_name' => $validated['last_name']],
+                $actor
+            );
+
             DB::commit();
 
             // Targeted cache invalidation
@@ -201,6 +212,14 @@ class UserService
                 ($newStatus ? 'Admin activated account for ' : 'Admin deactivated account for ') . $user->email,
                 $ip,
                 $userAgent
+            );
+
+            $this->internalAuditService->pushEvent(
+                $newStatus ? 'user_activated' : 'user_deactivated',
+                'User',
+                $user->id,
+                ['email' => $user->email],
+                $admin
             );
 
             DB::commit();

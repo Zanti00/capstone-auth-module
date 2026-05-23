@@ -22,17 +22,20 @@ class RolePermissionService
     protected RoleRepositoryInterface $roleRepo;
     protected PermissionRepositoryInterface $permissionRepo;
     protected AuditLogRepositoryInterface $auditLogRepo;
+    protected InternalAuditService $internalAuditService;
 
     public function __construct(
         UserRepositoryInterface $userRepo,
         RoleRepositoryInterface $roleRepo,
         PermissionRepositoryInterface $permissionRepo,
-        AuditLogRepositoryInterface $auditLogRepo
+        AuditLogRepositoryInterface $auditLogRepo,
+        InternalAuditService $internalAuditService
     ) {
         $this->userRepo = $userRepo;
         $this->roleRepo = $roleRepo;
         $this->permissionRepo = $permissionRepo;
         $this->auditLogRepo = $auditLogRepo;
+        $this->internalAuditService = $internalAuditService;
     }
 
     public function getRolesForUserCreation(?User $actor): array
@@ -100,6 +103,14 @@ class RolePermissionService
 
         $this->auditLogRepo->log($actor ? $actor->id : null, 'ROLE_CREATED', "Created role: {$role->name}", $ip, $userAgent);
 
+        $this->internalAuditService->pushEvent(
+            'ROLE_CREATED',
+            'Role',
+            $role->id,
+            ['message' => "Created role: {$role->name}", 'role_name' => $role->name],
+            $actor
+        );
+
         return $role;
     }
 
@@ -147,6 +158,14 @@ class RolePermissionService
             $userAgent
         );
 
+        $this->internalAuditService->pushEvent(
+            'ROLE_UPDATED',
+            'Role',
+            $role->id,
+            ['message' => "Updated role '{$oldName}'", 'role_name' => $role->name],
+            $actor
+        );
+
         return $role;
     }
 
@@ -174,6 +193,14 @@ class RolePermissionService
         try { Cache::forget('roles:list'); } catch (\Exception $e) {}
 
         $this->auditLogRepo->log($actor ? $actor->id : null, 'ROLE_DELETED', "Deleted role: {$roleName}", $ip, $userAgent);
+
+        $this->internalAuditService->pushEvent(
+            'ROLE_DELETED',
+            'Role',
+            $id,
+            ['message' => "Deleted role: {$roleName}", 'role_name' => $roleName],
+            $actor
+        );
     }
 
     public function getRoleUsers(int $roleId, ?User $actor = null): LengthAwarePaginator
@@ -243,6 +270,14 @@ class RolePermissionService
                 $userAgent
             );
 
+            $this->internalAuditService->pushEvent(
+                'ROLE_ASSIGNED',
+                'User',
+                $user->id,
+                ['message' => "Assigned role {$role->name} to user {$user->email} (was {$oldRoleName})", 'role_name' => $role->name, 'email' => $user->email],
+                $actor
+            );
+
             DB::commit();
 
             return $user->load('profile.role');
@@ -299,6 +334,14 @@ class RolePermissionService
             "Updated permissions for role: {$role->name}",
             $ip,
             $userAgent
+        );
+
+        $this->internalAuditService->pushEvent(
+            'ROLE_PERMISSIONS_UPDATED',
+            'Role',
+            $roleId,
+            ['message' => "Updated permissions for role: {$role->name}", 'role_name' => $role->name],
+            $actor
         );
     }
 
@@ -471,6 +514,14 @@ class RolePermissionService
             "Updated roles for permission: {$permission->name}",
             $ip,
             $userAgent
+        );
+
+        $this->internalAuditService->pushEvent(
+            'PERMISSION_ROLES_UPDATED',
+            'Permission',
+            $permissionId,
+            ['message' => "Updated roles for permission: {$permission->name}", 'permission_name' => $permission->name],
+            $actor
         );
     }
 
