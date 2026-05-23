@@ -19,6 +19,8 @@ Route::middleware(['auth:sanctum', 'active.session'])->group(function () {
         return $request->user();
     });
     Route::get('/me/permissions', [AuthController::class, 'permissions']);
+    Route::put('/me/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/me/password', [AuthController::class, 'changePassword']);
 });
 
 Route::middleware(['auth:sanctum', 'active.session', 'can:manage-users'])->prefix('admin')->group(function () {

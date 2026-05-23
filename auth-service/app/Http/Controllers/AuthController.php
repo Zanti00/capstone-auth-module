@@ -291,4 +291,122 @@ class AuthController extends Controller
             \Illuminate\Support\Facades\Log::error('Failed to push audit event to CRMS: ' . $e->getMessage());
         }
     }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|regex:/[A-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*(),.?":{}|<>]/',
+        ], [
+            'new_password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->credentials->password_hash)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The provided current password is incorrect.']
+            ]);
+        }
+
+        DB::table('user_credentials')
+            ->where('user_id', $user->id)
+            ->update([
+                'password_hash' => Hash::make($request->new_password),
+                'must_change_password' => false,
+                'password_changed_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        DB::table('audit_logs')->insert([
+            'actor_id' => $user->id,
+            'action' => 'PASSWORD_CHANGED',
+            'description' => 'User changed password: ' . $user->email,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'action_date' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $firstName = $user->profile->first_name ?? '';
+        $lastName = $user->profile->last_name ?? '';
+        $fullName = trim("{$firstName} {$lastName}");
+        $this->pushToCrmsAuditLog('password_changed', 'User', $user->id, [
+            'email' => $user->email,
+        ], [
+            'user_name' => !empty($fullName) ? $fullName : $user->email,
+            'user_email' => $user->email,
+            'user_role' => $user->profile->role->name ?? 'Finance',
+            'user_department' => $user->profile->department->name ?? 'Finance',
+        ]);
+
+        return response()->json(['message' => 'Password has been successfully updated.']);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'first_name' => 'required|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'phone' => 'required|string|max:20',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+        ]);
+
+        if ($request->email !== $user->email) {
+            $user->email = $request->email;
+            $user->save();
+        }
+
+        $user->profile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'phone' => $request->phone,
+            ]
+        );
+
+        $user->load(['profile.role', 'profile.department']);
+
+        DB::table('audit_logs')->insert([
+            'actor_id' => $user->id,
+            'action' => 'PROFILE_UPDATED',
+            'description' => 'User updated profile: ' . $user->email,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'action_date' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $firstName = $user->profile->first_name ?? '';
+        $lastName = $user->profile->last_name ?? '';
+        $fullName = trim("{$firstName} {$lastName}");
+        $this->pushToCrmsAuditLog('profile_updated', 'User', $user->id, [
+            'email' => $user->email,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+        ], [
+            'user_name' => !empty($fullName) ? $fullName : $user->email,
+            'user_email' => $user->email,
+            'user_role' => $user->profile->role->name ?? 'Finance',
+            'user_department' => $user->profile->department->name ?? 'Finance',
+        ]);
+
+        return response()->json([
+            'message' => 'Profile details updated successfully.',
+            'user' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'first_name' => $user->profile->first_name ?? '',
+                'last_name' => $user->profile->last_name ?? '',
+                'role' => $user->profile->role->name ?? '',
+                'department' => $user->profile->department->name ?? '',
+                'phone' => $user->profile->phone ?? '',
+            ]
+        ]);
+    }
 }
