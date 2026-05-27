@@ -195,6 +195,16 @@ const openModule = (subsystemTitle: string) => {
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
         window.location.href = '/crms/sales/dashboard'
       }
+    } else if (subsystemTitle === 'Smart Expense Reimbursement') {
+      if (userRole.value === 'IT Admin') {
+        router.push('/admin')
+      } else if (userRole.value === 'Admin') {
+        window.location.href = '/serms/admin/dashboard'
+      } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
+        window.location.href = '/serms/manager/dashboard'
+      } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
+        window.location.href = '/serms/sales/dashboard'
+      }
     } else if (subsystemTitle === 'User & Access Management') {
     router.push('/admin')
   } else {
