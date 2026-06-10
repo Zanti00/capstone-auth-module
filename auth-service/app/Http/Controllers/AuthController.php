@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Helpers\CookieHelper;
 
 class AuthController extends Controller
 {
@@ -55,36 +56,12 @@ class AuthController extends Controller
         return response()->json([
             'user' => $result['user'],
             'permissions' => $result['permissions']
-        ])->cookie(
-            'access_token',
-            $result['access_token'],
-            60 * 24, // 1 day
-            null,
-            null,
-            true, // Secure
-            true, // HttpOnly
-            false,
-            'Strict'
-        )->cookie(
-            'refresh_token',
-            $result['refresh_token'],
-            60 * 24 * 30, // 30 days
-            null,
-            null,
-            true, // Secure
-            true, // HttpOnly
-            false,
-            'Strict'
-        )->cookie(
-            'session_id',
-            $result['session_id'],
-            60 * 24 * 30, // 30 days
-            null,
-            null,
-            true, // Secure
-            true, // HttpOnly
-            false,
-            'Strict'
+        ])->withCookie(
+            CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
+        )->withCookie(
+            CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
+        )->withCookie(
+            CookieHelper::makeAuthCookie('session_id', $result['session_id'], 60 * 24 * 30)
         );
     }
 
@@ -105,26 +82,10 @@ class AuthController extends Controller
 
             return response()->json([
                 'user' => $result['user']
-            ])->cookie(
-                'access_token',
-                $result['access_token'],
-                60 * 24, // 1 day
-                null,
-                null,
-                true,
-                true,
-                false,
-                'Strict'
-            )->cookie(
-                'refresh_token',
-                $result['refresh_token'],
-                60 * 24 * 30,
-                null,
-                null,
-                true,
-                true,
-                false,
-                'Strict'
+            ])->withCookie(
+                CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
+            )->withCookie(
+                CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
             );
         } catch (ValidationException $e) {
             return response()->json(['message' => $e->getMessage()], 401);
@@ -140,9 +101,9 @@ class AuthController extends Controller
         $this->authService->logout($refreshTokenPlain, $sessionId, $user, $request->ip(), $request->userAgent());
 
         return response()->json(['message' => 'Successfully logged out.'])
-            ->withoutCookie('access_token')
-            ->withoutCookie('refresh_token')
-            ->withoutCookie('session_id');
+            ->withCookie(CookieHelper::forgetAuthCookie('access_token'))
+            ->withCookie(CookieHelper::forgetAuthCookie('refresh_token'))
+            ->withCookie(CookieHelper::forgetAuthCookie('session_id'));
     }
 
     public function forgotPassword(Request $request)

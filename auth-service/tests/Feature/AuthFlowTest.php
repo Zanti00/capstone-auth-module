@@ -42,12 +42,11 @@ class AuthFlowTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
-            'access_token',
-            'token_type',
-            'session_id',
-            'user'
+            'user',
+            'permissions'
         ]);
-        $this->assertNotNull($response->json('access_token'));
+        $response->assertCookie('access_token');
+        $response->assertCookie('session_id');
     }
 
     /**
@@ -105,8 +104,8 @@ class AuthFlowTest extends TestCase
             'password' => 'Password123!',
         ]);
 
-        $token = $loginResponse->json('access_token');
-        $sessionId = $loginResponse->json('session_id');
+        $token = $loginResponse->getCookie('access_token', false)->getValue();
+        $sessionId = $loginResponse->getCookie('session_id', false)->getValue();
 
         // Logout with token
         $response = $this->withHeaders([
