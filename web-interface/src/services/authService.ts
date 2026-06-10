@@ -60,4 +60,23 @@ export const authService = {
   resendVerification() {
     return api.post('/api/send-verification')
   },
+
+  async changePassword(payload: any) {
+    const { public_key, key_id } = await fetchEncryptionKey()
+    
+    const encryptedPayload = {
+      ...payload,
+      current_password: encryptPayload(payload.current_password, public_key),
+      new_password: encryptPayload(payload.new_password, public_key),
+      new_password_confirmation: payload.new_password_confirmation 
+        ? encryptPayload(payload.new_password_confirmation, public_key)
+        : undefined
+    }
+
+    return api.post('/api/me/password', encryptedPayload, {
+      headers: {
+        'X-Key-Id': key_id
+      }
+    })
+  },
 }

@@ -14,17 +14,22 @@ Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 Route::get('/internal/audit-logs', [\App\Http\Controllers\InternalAuditLogController::class, 'index']);
 
 Route::middleware(['auth:api', 'active.session'])->group(function () {
+    // Routes that must be accessible even if password change is required
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/send-verification', [AuthController::class, 'sendVerification']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-    Route::get('/me/permissions', [AuthController::class, 'permissions']);
-    Route::put('/me/profile', [AuthController::class, 'updateProfile']);
     Route::post('/me/password', [AuthController::class, 'changePassword'])->middleware('decrypt.rsa:current_password,new_password,new_password_confirmation');
+
+    // Routes that require password change
+    Route::middleware('require.password.change')->group(function () {
+        Route::post('/send-verification', [AuthController::class, 'sendVerification']);
+        Route::get('/user', function (Request $request) {
+            return $request->user();
+        });
+        Route::get('/me/permissions', [AuthController::class, 'permissions']);
+        Route::put('/me/profile', [AuthController::class, 'updateProfile']);
+    });
 });
 
-Route::middleware(['auth:api', 'active.session', 'can:manage-users'])->prefix('admin')->group(function () {
+Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can:manage-users'])->prefix('admin')->group(function () {
     Route::get('/users', [App\Http\Controllers\AdminUserController::class, 'index']);
     Route::post('/users', [App\Http\Controllers\AdminUserController::class, 'store']);
     Route::get('/users/{id}', [App\Http\Controllers\AdminUserController::class, 'show']);
@@ -33,7 +38,7 @@ Route::middleware(['auth:api', 'active.session', 'can:manage-users'])->prefix('a
     Route::get('/role-options', [App\Http\Controllers\AdminUserController::class, 'getRoles']);
 });
 
-Route::middleware(['auth:api', 'active.session', 'can:manage-roles'])->prefix('admin')->group(function () {
+Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can:manage-roles'])->prefix('admin')->group(function () {
     Route::apiResource('roles', App\Http\Controllers\RoleController::class);
     Route::get('roles/{id}/users', [App\Http\Controllers\RoleController::class, 'users']);
     Route::patch('users/{id}/role', [App\Http\Controllers\RoleController::class, 'assignRole']);
@@ -46,12 +51,12 @@ Route::middleware(['auth:api', 'active.session', 'can:manage-roles'])->prefix('a
     Route::post('roles/{id}/permissions', [App\Http\Controllers\RoleController::class, 'syncPermissions']);
 });
 
-Route::middleware(['auth:api', 'active.session', 'can:manage-departments'])->prefix('admin')->group(function () {
+Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can:manage-departments'])->prefix('admin')->group(function () {
     Route::apiResource('departments', App\Http\Controllers\DepartmentController::class);
     Route::get('departments/{id}/users', [App\Http\Controllers\DepartmentController::class, 'users']);
     Route::patch('users/{id}/department', [App\Http\Controllers\DepartmentController::class, 'assignDepartment']);
 });
 
-Route::middleware(['auth:api', 'active.session'])->group(function () {
+Route::middleware(['auth:api', 'active.session', 'require.password.change'])->group(function () {
     Route::get('users/{id}/permissions', [App\Http\Controllers\AdminUserController::class, 'getUserPermissions']);
 });

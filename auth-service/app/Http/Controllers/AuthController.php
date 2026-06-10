@@ -202,8 +202,16 @@ class AuthController extends Controller
     public function changePassword(Request $request)
     {
         $request->validate([
-            'current_password' => 'required|string|max:255',
-            'new_password' => 'required|string|min:8|max:255|regex:/[A-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*(),.?":{}|<>]/',
+            'current_password' => ['required', 'string', 'max:255'],
+            'new_password' => [
+                'required',
+                'string',
+                'min:8',
+                'max:255',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[!@#$%^&*(),.?":{}|<>]/',
+            ],
         ], [
             'new_password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
         ]);

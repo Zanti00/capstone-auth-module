@@ -34,6 +34,12 @@ const routes = [
     component: () => import('../views/auth/EmailVerification.vue')
   },
   {
+    path: '/force-change-password',
+    name: 'force-change-password',
+    component: () => import('../views/auth/ForceChangePassword.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/home',
     name: 'home',
     component: () => import('../views/HomePage.vue'),
@@ -96,6 +102,8 @@ router.beforeEach((to, _from, next) => {
     next({ name: 'home' })
   } else if (requiresAuth && !isAuthenticated) {
     next({ name: 'login' })
+  } else if (isAuthenticated && user.is_password_changed === false && to.name !== 'force-change-password' && to.name !== 'logout') {
+    next({ name: 'force-change-password' })
   } else if (requiresAdmin && roleName !== 'IT Admin') {
     // Strictly isolate auth-module interface to IT Admin only
     alert('Access Denied: Only IT Admin can access the authentication module interface.')

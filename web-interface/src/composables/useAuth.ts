@@ -155,6 +155,40 @@ export function useAuth() {
     }
   }
 
+  // ── Change Password ────────────────────────────────────────────────────────
+  const changePasswordLoading = ref(false)
+  const changePasswordSuccess = ref(false)
+  const changePasswordErrors = ref<Record<string, string[]>>({})
+  const changePasswordGeneralError = ref('')
+
+  const changePassword = async (payload: any) => {
+    changePasswordLoading.value = true
+    changePasswordSuccess.value = false
+    changePasswordErrors.value = {}
+    changePasswordGeneralError.value = ''
+
+    try {
+      await authService.changePassword(payload)
+      changePasswordSuccess.value = true
+      
+      // Update local storage user flag
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        user.is_password_changed = true
+        localStorage.setItem('user', JSON.stringify(user))
+      }
+    } catch (error: any) {
+      if (error.response?.status === 422) {
+        changePasswordErrors.value = error.response.data.errors
+      } else {
+        changePasswordGeneralError.value = error.response?.data?.message || 'Failed to change password.'
+      }
+    } finally {
+      changePasswordLoading.value = false
+    }
+  }
+
   return {
     // Login
     login,
@@ -183,5 +217,11 @@ export function useAuth() {
     resending,
     resendMessage,
     resendError,
+    // Change Password
+    changePassword,
+    changePasswordLoading,
+    changePasswordSuccess,
+    changePasswordErrors,
+    changePasswordGeneralError,
   }
 }

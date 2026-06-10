@@ -172,6 +172,7 @@ class AuthService
             'id' => $user->id,
             'email' => $user->email,
             'is_active' => (bool) $user->is_active,
+            'is_password_changed' => (bool) $user->is_password_changed,
             'profile' => $user->profile ? [
                 'first_name' => $user->profile->first_name,
                 'last_name' => $user->profile->last_name,
@@ -288,6 +289,10 @@ class AuthService
                 false
             );
 
+            $this->userRepo->update($user->id, [
+                'is_password_changed' => true,
+            ]);
+
             $this->sessionRepo->usePasswordResetToken($tokenRecord->id);
             $this->sessionRepo->invalidateAllSessions($user->id);
             $this->sessionRepo->revokeAllRefreshTokens($user->id);
@@ -373,6 +378,10 @@ class AuthService
             Hash::make($newPassword),
             false
         );
+
+        $this->userRepo->update($user->id, [
+            'is_password_changed' => true,
+        ]);
 
         $this->auditLogRepo->log(
             $user->id,

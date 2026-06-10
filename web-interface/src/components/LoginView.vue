@@ -1,52 +1,63 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
-import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
-import ForgotPasswordModal from '@/components/ForgotPassword.vue'
+import { ref, reactive } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "@/composables/useAuth";
+import { Eye, EyeOff, Loader2 } from "lucide-vue-next";
+import ForgotPasswordModal from "@/components/ForgotPassword.vue";
 
-const router = useRouter()
+const router = useRouter();
 const {
   login,
   loginLoading: isLoading,
   loginErrors: errors,
   loginGeneralError: generalError,
-} = useAuth()
+} = useAuth();
 
 const form = reactive({
-  email: '',
-  password: ''
-})
+  email: "",
+  password: "",
+});
 
-const showPassword = ref(false)
-const showForgot = ref(false)
+const showPassword = ref(false);
+const showForgot = ref(false);
 
 const togglePassword = () => {
-  showPassword.value = !showPassword.value
-}
+  showPassword.value = !showPassword.value;
+};
 
 const handleLogin = async () => {
-  const result = await login(form)
+  const result = await login(form);
 
   if (result.success && result.user) {
-    const roleName = result.user.profile?.role?.name || result.user.role || ''
+    const roleName = result.user.profile?.role?.name || result.user.role || "";
 
-    if (['IT Admin', 'Admin', 'Manager', 'Sales', 'Employee', 'Finance Manager', 'Finance Employee', 'Finance', 'Super Admin'].includes(roleName)) {
-      router.push('/home')
+    if (
+      [
+        "IT Admin",
+        "Admin",
+        "Manager",
+        "Sales",
+        "Employee",
+        "Finance Manager",
+        "Finance Employee",
+        "Finance",
+        "Super Admin",
+      ].includes(roleName)
+    ) {
+      router.push("/home");
     } else {
-      generalError.value = 'Unrecognized role. Please contact IT Support.'
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('session_id')
-      localStorage.removeItem('user')
+      generalError.value = "Unrecognized role. Please contact IT Support.";
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("session_id");
+      localStorage.removeItem("user");
     }
   }
-}
+};
 </script>
 
 <template>
   <!-- Two-panel layout -->
   <div class="login-container">
-
     <!-- ── LEFT PANEL ── -->
     <div class="left-panel">
       <img class="bg-image" src="@/assets/login.png" alt="Login background" />
@@ -60,9 +71,8 @@ const handleLogin = async () => {
     <!-- ── RIGHT PANEL ── -->
     <div class="right-panel">
       <form class="form-box" @submit.prevent="handleLogin">
-
         <h2 class="title">Welcome Back!</h2>
-        <p class="subtitle">Sign in to the Ticketing Management System</p>
+        <p class="subtitle">Sign in to the SBSI</p>
 
         <!-- General / field errors -->
         <div v-if="generalError" class="login-error" role="alert">
@@ -106,16 +116,14 @@ const handleLogin = async () => {
             <EyeOff v-else :size="18" class="eye-icon" />
           </button>
         </div>
-        <p v-if="errors.password" class="field-error">{{ errors.password[0] }}</p>
+        <p v-if="errors.password" class="field-error">
+          {{ errors.password[0] }}
+        </p>
 
         <!-- SUBMIT -->
-        <button
-          type="submit"
-          class="login-btn"
-          :disabled="isLoading"
-        >
+        <button type="submit" class="login-btn" :disabled="isLoading">
           <Loader2 v-if="isLoading" class="btn-spinner" :size="18" />
-          {{ isLoading ? 'Signing in...' : 'Sign In' }}
+          {{ isLoading ? "Signing in..." : "Sign In" }}
         </button>
 
         <!-- FORGOT PASSWORD -->
@@ -127,10 +135,8 @@ const handleLogin = async () => {
 
         <!-- MODAL -->
         <ForgotPasswordModal v-if="showForgot" @close="showForgot = false" />
-
       </form>
     </div>
-
   </div>
 </template>
 
@@ -334,8 +340,12 @@ const handleLogin = async () => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* FORGOT PASSWORD */
