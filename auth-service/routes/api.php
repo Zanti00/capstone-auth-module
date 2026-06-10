@@ -4,10 +4,11 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::get('/encryption-key', [AuthController::class, 'getEncryptionKey']);
+Route::post('/login', [AuthController::class, 'login'])->middleware(['throttle:auth', 'decrypt.rsa:password']);
 Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:auth', 'decrypt.rsa:password,password_confirmation']);
 Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 
 Route::get('/internal/audit-logs', [\App\Http\Controllers\InternalAuditLogController::class, 'index']);
@@ -20,7 +21,7 @@ Route::middleware(['auth:api', 'active.session'])->group(function () {
     });
     Route::get('/me/permissions', [AuthController::class, 'permissions']);
     Route::put('/me/profile', [AuthController::class, 'updateProfile']);
-    Route::post('/me/password', [AuthController::class, 'changePassword']);
+    Route::post('/me/password', [AuthController::class, 'changePassword'])->middleware('decrypt.rsa:current_password,new_password,new_password_confirmation');
 });
 
 Route::middleware(['auth:api', 'active.session', 'can:manage-users'])->prefix('admin')->group(function () {

@@ -4,10 +4,22 @@
 
 import api from '@/lib/api'
 import type { LoginCredentials, ResetPasswordPayload } from '@/types'
+import { fetchEncryptionKey, encryptPayload } from '@/utils/rsa'
 
 export const authService = {
-  login(credentials: LoginCredentials) {
-    return api.post('/api/login', credentials)
+  async login(credentials: LoginCredentials) {
+    const { public_key, key_id } = await fetchEncryptionKey()
+    
+    const encryptedCredentials = {
+      ...credentials,
+      password: encryptPayload(credentials.password, public_key)
+    }
+
+    return api.post('/api/login', encryptedCredentials, {
+      headers: {
+        'X-Key-Id': key_id
+      }
+    })
   },
 
   logout() {
@@ -18,8 +30,22 @@ export const authService = {
     return api.post('/api/forgot-password', { email })
   },
 
-  resetPassword(payload: ResetPasswordPayload) {
-    return api.post('/api/reset-password', payload)
+  async resetPassword(payload: ResetPasswordPayload) {
+    const { public_key, key_id } = await fetchEncryptionKey()
+    
+    const encryptedPayload = {
+      ...payload,
+      password: encryptPayload(payload.password, public_key),
+      password_confirmation: payload.password_confirmation 
+        ? encryptPayload(payload.password_confirmation, public_key)
+        : undefined
+    }
+
+    return api.post('/api/reset-password', encryptedPayload, {
+      headers: {
+        'X-Key-Id': key_id
+      }
+    })
   },
 
   /**

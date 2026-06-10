@@ -31,6 +31,37 @@ class AuthController extends Controller
         $this->userService = $userService;
     }
 
+    public function getEncryptionKey()
+    {
+        $config = [
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ];
+
+        // Create the keypair
+        $res = openssl_pkey_new($config);
+        
+        if (!$res) {
+            return response()->json(['message' => 'Failed to generate encryption key'], 500);
+        }
+
+        // Extract private key
+        openssl_pkey_export($res, $privateKey);
+
+        // Extract public key
+        $publicKey = openssl_pkey_get_details($res)['key'];
+
+        $keyId = (string) Str::uuid();
+
+        // Store private key in cache for 5 minutes
+        \Illuminate\Support\Facades\Cache::put("rsa_key_{$keyId}", $privateKey, now()->addMinutes(5));
+
+        return response()->json([
+            'public_key' => $publicKey,
+            'key_id' => $keyId,
+        ]);
+    }
+
     public function login(Request $request)
     {
         \Illuminate\Support\Facades\Log::info('Login Attempt Data:', $request->all());
@@ -103,7 +134,8 @@ class AuthController extends Controller
         return response()->json(['message' => 'Successfully logged out.'])
             ->withCookie(CookieHelper::forgetAuthCookie('access_token'))
             ->withCookie(CookieHelper::forgetAuthCookie('refresh_token'))
-            ->withCookie(CookieHelper::forgetAuthCookie('session_id'));
+            ->withCookie(CookieHelper::forgetAuthCookie('session_id'))
+            ->withCookie(CookieHelper::forgetAuthCookie('sb-pebzdnartcxnbskjhnhk-auth-token'));
     }
 
     public function forgotPassword(Request $request)
