@@ -204,42 +204,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Internal endpoint for other services to verify a token.
-     */
-    public function verifyToken(Request $request)
-    {
-        $request->validate(['token' => 'required|string']);
 
-        // Sanctum uses | to separate ID from token
-        $token = $request->token;
-        $token = urldecode($token); // In case it's still URL encoded
-
-        // If the token is an encrypted cookie, decrypt it first
-        try {
-            // Check if it looks like a Laravel encrypted payload (base64 of JSON)
-            if (str_starts_with($token, 'eyJ') || !str_contains($token, '|')) {
-                $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($token);
-                // The decrypted cookie value might have the | character
-                if (str_contains($decrypted, '|')) {
-                    $token = $decrypted;
-                }
-            }
-        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // It wasn't encrypted or couldn't be decrypted, proceed with original
-        }
-
-        if (str_contains($token, '|')) {
-            $token = explode('|', $token)[1];
-        }
-
-        try {
-            $result = $this->authService->verifyAccessToken($token);
-            return response()->json($result);
-        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
-            return $e->getResponse();
-        }
-    }
 
     public function changePassword(Request $request)
     {

@@ -71,7 +71,7 @@ class AuthService
 
         RateLimiter::clear($throttleKey);
 
-        $accessToken = $user->createToken('auth_token')->plainTextToken;
+        $accessToken = $user->createToken('auth_token')->accessToken;
         $refreshTokenPlain = Str::random(128);
         $refreshTokenHash = hash('sha256', $refreshTokenPlain);
         $sessionId = (string) Str::uuid();
@@ -105,8 +105,9 @@ class AuthService
         }
 
         $permissions = $user->profile?->role?->permissions()
-            ?->where('system', 'crms')
             ?->pluck('slug') ?? collect();
+            
+        \Illuminate\Support\Facades\Cache::put("user_permissions:{$user->id}", $permissions->toArray(), 86400);
 
         $user->unsetRelation('credentials');
 
@@ -155,7 +156,7 @@ class AuthService
             ]);
         }
 
-        $accessToken = $user->createToken('auth_token')->plainTextToken;
+        $accessToken = $user->createToken('auth_token')->accessToken;
 
         return [
             'access_token' => $accessToken,
@@ -193,8 +194,11 @@ class AuthService
             $this->sessionRepo->revokeRefreshToken($tokenHash);
         }
 
-        if ($user && $user->currentAccessToken()) {
-            $user->currentAccessToken()->delete();
+        if ($user && $user->token()) {
+            $tokenId = $user->token()->id;
+            \Illuminate\Support\Facades\Cache::put("jwt_blacklist:{$tokenId}", true, 120 * 60);
+            \Illuminate\Support\Facades\Cache::forget("user_permissions:{$user->id}");
+            $user->token()->revoke();
         }
 
         if ($sessionId) {
@@ -353,35 +357,7 @@ class AuthService
         });
     }
 
-    public function verifyAccessToken(string $token): array
-    {
-        if (str_contains($token, '|')) {
-            $token = explode('|', $token)[1];
-        }
-
-        $accessToken = PersonalAccessToken::findToken($token);
-
-        if (!$accessToken || ($accessToken->expires_at && $accessToken->expires_at->isPast())) {
-            throw new HttpResponseException(
-                response()->json(['valid' => false, 'message' => 'Invalid or expired token.'], 401)
-            );
-        }
-
-        $user = $accessToken->tokenable->load(['profile.role.permissions', 'profile.department']);
-
-        return [
-            'valid' => true,
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'first_name' => $user->profile->first_name,
-                'last_name' => $user->profile->last_name,
-                'role' => $user->profile->role->name,
-                'department' => $user->profile->department->name,
-                'permissions' => $user->profile->role->permissions->pluck('slug')
-            ]
-        ];
-    }
+    // verifyAccessToken removed due to stateless JWT architecture
 
     public function changePassword(User $user, string $currentPassword, string $newPassword, string $ip, string $userAgent): void
     {

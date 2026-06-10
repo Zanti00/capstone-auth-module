@@ -77,14 +77,19 @@ MAIL_FROM_NAME="Capstone Identity"
 
 The service runs inside a Docker container named `auth-service` as part of the orchestration bundle.
 
+### Automated Startup
+When running `docker compose up`, the container entrypoint automatically handles:
+- Copying `.env.example` to `.env`
+- Installing Composer dependencies
+- Generating `APP_KEY` and `INTERNAL_ENCRYPTION_KEY`
+- Generating Passport Keys
+- Running database migrations and seeding default users/roles
+
+You do not need to manually run any setup commands for a fresh clone.
+
 ### Command Execution inside Container
 
-To run database migrations and populate seeds:
-```bash
-docker exec -it auth-service php artisan migrate --seed
-```
-
-To clear config and cache layers:
+To clear config and cache layers manually:
 ```bash
 docker exec -it auth-service php artisan config:clear
 docker exec -it auth-service php artisan cache:clear

@@ -369,7 +369,7 @@ class RolePermissionService
     public function getUserPermissions(int $userId): array
     {
         try {
-            return Cache::store('database')->remember("permissions:user:{$userId}", 300, function () use ($userId) {
+            return Cache::remember("user_permissions:{$userId}", 86400, function () use ($userId) {
                 return $this->userRepo->getUserPermissions($userId);
             });
         } catch (\Exception $e) {
@@ -561,7 +561,7 @@ class RolePermissionService
     private function invalidateUserPermissionCache(int $userId): void
     {
         try {
-            Cache::store('database')->forget("permissions:user:{$userId}");
+            Cache::forget("user_permissions:{$userId}");
         } catch (\Exception $e) {
             Log::warning('Failed to invalidate permission cache', ['user_id' => $userId, 'error' => $e->getMessage()]);
         }

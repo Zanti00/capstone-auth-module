@@ -69,6 +69,11 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Create Partners', 'slug' => 'crms.partners.create', 'system' => 'crms'],
             ['name' => 'Edit Partners',   'slug' => 'crms.partners.edit',   'system' => 'crms'],
             ['name' => 'Delete Partners', 'slug' => 'crms.partners.delete', 'system' => 'crms'],
+
+            // SERMS Permissions
+            ['name' => 'Manage Reimbursements', 'slug' => 'serms.reimbursements.manage', 'system' => 'serms'],
+            ['name' => 'Manage Liquidations',   'slug' => 'serms.liquidations.manage',   'system' => 'serms'],
+            ['name' => 'Manage Cash Advances',  'slug' => 'serms.cash_advances.manage',  'system' => 'serms'],
         ];
 
         foreach ($permissions as $permission) {
@@ -106,6 +111,7 @@ class RolePermissionSeeder extends Seeder
                 'crms.users.view',     'crms.users.create',     'crms.users.edit',     'crms.users.delete',
                 'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',  'crms.partners.delete',
                 'manage-users',
+                'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
             ])->get();
             $crmsAdmin->permissions()->syncWithoutDetaching($adminPerms->pluck('id'));
         }
@@ -126,6 +132,7 @@ class RolePermissionSeeder extends Seeder
                 'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.approve',
                 'crms.users.view',
                 'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
+                'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
             ])->get();
             $crmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
         }
@@ -146,6 +153,7 @@ class RolePermissionSeeder extends Seeder
                 'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.approve',
                 'crms.users.view',
                 'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
+                'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
             ])->get();
             $financeManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
         }

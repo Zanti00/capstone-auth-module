@@ -131,7 +131,7 @@ class EmailVerificationTest extends TestCase
         // Define a temporary route to test middleware
         \Illuminate\Support\Facades\Route::get('/test-verified', function () {
             return response()->json(['message' => 'Verified!']);
-        })->middleware(['auth:sanctum', 'active.session', 'verified']);
+        })->middleware(['auth:api', 'active.session', 'verified']);
 
         $response = $this->withSession($user)->getJson('/test-verified');
 
@@ -144,7 +144,7 @@ class EmailVerificationTest extends TestCase
 
         \Illuminate\Support\Facades\Route::get('/test-verified-allow', function () {
             return response()->json(['message' => 'Verified!']);
-        })->middleware(['auth:sanctum', 'active.session', 'verified']);
+        })->middleware(['auth:api', 'active.session', 'verified']);
 
         $response = $this->withSession($user)->getJson('/test-verified-allow');
 

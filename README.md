@@ -98,7 +98,7 @@ The project utilizes a decoupled client-server architecture to ensure strict sep
    docker network create shared-capstone-network
    ```
 
-3. Initialize environment variables. Copy the templates and configure the parameters (especially database credentials and `INTERNAL_ENCRYPTION_KEY` which must be a 32-character string):
+3. Initialize environment variables. (Optional) The docker entrypoint will automatically copy `.env.example` if `.env` is missing, and will generate any required keys on startup. You can manually copy and configure them if you need custom values:
    ```bash
    # Root / Docker Compose env
    cp .env.example .env
@@ -119,16 +119,7 @@ For a detailed setup guide, command reference, and common troubleshooting steps 
    docker compose up -d --build
    ```
 
-2. Generate the application encryption key:
-
-   ```bash
-   docker exec -it auth-service php artisan key:generate
-   ```
-
-3. Execute database migrations and seed default users, roles, and permissions:
-   ```bash
-   docker exec -it auth-service php artisan migrate --seed
-   ```
+> **Note:** The `auth-service` container will automatically run `composer install`, generate application and encryption keys, create Passport keys, and run all database migrations/seeds on startup. You do not need to manually run `php artisan key:generate` or `php artisan migrate`.
 
 ## Running the Project
 
