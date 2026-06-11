@@ -16,6 +16,9 @@ class EmailVerificationTest extends TestCase
 
     public function withSession($user)
     {
+        $user->is_password_changed = true;
+        $user->save();
+
         $sessionId = (string) \Illuminate\Support\Str::uuid();
         DB::table('user_sessions')->insert([
             'user_id' => $user->id,
@@ -27,7 +30,7 @@ class EmailVerificationTest extends TestCase
             'created_at' => now(),
         ]);
 
-        return $this->actingAs($user)->withHeader('X-Session-ID', $sessionId);
+        return $this->actingAs($user, 'api')->withHeader('X-Session-ID', $sessionId);
     }
 
     public function test_user_can_request_verification_email()

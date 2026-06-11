@@ -12,6 +12,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middle
 Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 
 Route::get('/internal/audit-logs', [\App\Http\Controllers\InternalAuditLogController::class, 'index']);
+Route::post('/internal/verify-token', \App\Http\Controllers\InternalVerifyTokenController::class);
 
 Route::middleware(['auth:api', 'active.session'])->group(function () {
     // Routes that must be accessible even if password change is required

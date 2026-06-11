@@ -130,6 +130,9 @@ services:
   auth-redis:
     image: redis:alpine
     container_name: auth-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - auth-redis-data:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -146,3 +149,4 @@ volumes:
   auth-service-vendor:
   web-interface-node-modules:
   mysql-data:
+  auth-redis-data:

@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Laravel\Sanctum\PersonalAccessToken;
 use App\Services\InternalAuditService;
+
 
 class AuthService
 {

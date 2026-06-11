@@ -127,7 +127,7 @@ class AuthController extends Controller
     {
         $refreshTokenPlain = $request->cookie('refresh_token');
         $user = $request->user();
-        $sessionId = $request->cookie('session_id') ?? $request->header('X-Session-ID');
+        $sessionId = $request->cookie('session_id') ?: $request->header('X-Session-ID');
 
         $this->authService->logout($refreshTokenPlain, $sessionId, $user, $request->ip(), $request->userAgent());
 

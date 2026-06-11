@@ -110,11 +110,11 @@ class UserService
                     );
                 }
 
-                $allowedRoleNames = ['Finance Manager', 'Finance Employee'];
+                $allowedRoleNames = ['Manager', 'Employee'];
                 $assignedRole = $this->roleRepo->findById($validated['role_id']);
                 if (!$assignedRole || !in_array($assignedRole->name, $allowedRoleNames)) {
                     throw new HttpResponseException(
-                        response()->json(['message' => 'You are only authorized to assign Finance Manager or Finance Employee roles.'], 403)
+                        response()->json(['message' => 'You are only authorized to assign Manager or Employee roles.'], 403)
                     );
                 }
             } else {

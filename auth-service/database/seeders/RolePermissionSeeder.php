@@ -23,8 +23,6 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Sales',               'description' => 'Sales staff access'],
             ['name' => 'Finance',             'description' => 'Finance staff access'],
             ['name' => 'Employee',            'description' => 'Regular staff access'],
-            ['name' => 'Finance Manager',     'description' => 'Finance department manager'],
-            ['name' => 'Finance Employee',    'description' => 'Finance department employee'],
         ];
 
         // insertOrIgnore: skips duplicates instead of crashing
@@ -137,26 +135,7 @@ class RolePermissionSeeder extends Seeder
             $crmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
         }
 
-        // 3b. Finance Manager — same default access as CRMS Manager, but scoped to Finance department
-        $financeManager = \App\Models\Role::where('name', 'Finance Manager')->first();
-        if ($financeManager) {
-            $managerPerms = \App\Models\Permission::whereIn('slug', [
-                'crms.templates.use',
-                'crms.ocr.upload',
-                'crms.ocr.process',
-                'crms.ocr.review',
-                'crms.contracts.generate',
-                'crms.risk.assess',
-                'crms.risk.view',
-                'crms.risk.approve',
-                // CRUD
-                'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.approve',
-                'crms.users.view',
-                'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
-                'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
-            ])->get();
-            $financeManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
-        }
+
 
         // 4. CRMS Sales — limited, view-only on most; own-record access enforced by app logic
         $crmsSales = \App\Models\Role::where('name', 'Sales')->first();
