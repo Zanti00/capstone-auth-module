@@ -62,25 +62,17 @@ const handleLogin = async () => {
   const result = await login(form)
 
   if (result.success && result.user) {
-    const roleName = result.user.profile?.role?.name || result.user.role || ''
-
-    if (['IT Admin', 'Admin', 'Manager', 'Sales', 'Employee', 'Finance Manager', 'Finance Employee', 'Finance', 'Super Admin'].includes(roleName)) {
-      const redirectUri = router.currentRoute.value.query.redirect_uri
-      if (redirectUri) {
-         let url = redirectUri as string
-         const state = router.currentRoute.value.query.state
-         if (state) {
-            url += (url.includes('?') ? '&' : '?') + 'state=' + encodeURIComponent(state as string)
-         }
-         url += (url.includes('?') ? '&' : '?') + 'message=' + encodeURIComponent('Successfully logged in')
-         window.location.href = url
-      } else {
-         router.push('/home')
+    const redirectUri = router.currentRoute.value.query.redirect_uri
+    if (redirectUri) {
+      let url = redirectUri as string
+      const state = router.currentRoute.value.query.state
+      if (state) {
+        url += (url.includes('?') ? '&' : '?') + 'state=' + encodeURIComponent(state as string)
       }
+      url += (url.includes('?') ? '&' : '?') + 'message=' + encodeURIComponent('Successfully logged in')
+      window.location.href = url
     } else {
-      generalError.value = 'Unrecognized role. Please contact IT Support.'
-      localStorage.removeItem('session_id')
-      localStorage.removeItem('user')
+      router.push('/home')
     }
   }
 }

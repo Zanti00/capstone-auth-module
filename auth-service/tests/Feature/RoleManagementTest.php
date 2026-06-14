@@ -58,6 +58,8 @@ class RoleManagementTest extends TestCase
     public function test_can_create_role()
     {
         [$user, $sessionId] = $this->getAdminUserWithSession();
+        Cache::put('roles:list', [['name' => 'Cached Role']], 300);
+        Cache::put('roles:all', [['name' => 'Cached Role']], 300);
 
         $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
@@ -70,6 +72,8 @@ class RoleManagementTest extends TestCase
                  ->assertJsonFragment(['name' => 'Custom Role']);
                  
         $this->assertDatabaseHas('roles', ['name' => 'Custom Role']);
+        $this->assertNull(Cache::get('roles:list'));
+        $this->assertNull(Cache::get('roles:all'));
         
         // Check audit log
         $this->assertDatabaseHas('audit_logs', [

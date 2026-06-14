@@ -29,28 +29,7 @@ const handleLogin = async () => {
   const result = await login(form);
 
   if (result.success && result.user) {
-    const roleName = result.user.profile?.role?.name || result.user.role || "";
-
-    if (
-      [
-        "IT Admin",
-        "Admin",
-        "Manager",
-        "Sales",
-        "Employee",
-        "Finance Manager",
-        "Finance Employee",
-        "Finance",
-        "Super Admin",
-      ].includes(roleName)
-    ) {
-      router.push("/home");
-    } else {
-      generalError.value = "Unrecognized role. Please contact IT Support.";
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("session_id");
-      localStorage.removeItem("user");
-    }
+    router.push("/home");
   }
 };
 </script>
