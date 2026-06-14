@@ -189,11 +189,11 @@ const openModule = (subsystemTitle: string) => {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
       } else if (userRole.value === 'Admin') {
-        window.location.href = '/crms/admin/dashboard'
+        window.location.href = '/cms/admin/dashboard'
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
-        window.location.href = '/crms/manager/dashboard'
+        window.location.href = '/cms/manager/dashboard'
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
-        window.location.href = '/crms/sales/dashboard'
+        window.location.href = '/cms/sales/dashboard'
       }
     } else if (subsystemTitle === 'Productivity Report System') {
       window.location.href = '/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in'

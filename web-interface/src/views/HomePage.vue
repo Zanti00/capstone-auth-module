@@ -190,11 +190,11 @@ const openModule = (subsystemTitle: string) => {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
       } else if (userRole.value === 'Admin') {
-        window.location.href = `/crms/auth/callback?state=/crms/admin/dashboard`
+        window.location.href = `/cms/auth/callback?state=/cms/admin/dashboard`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
-        window.location.href = `/crms/auth/callback?state=/crms/manager/dashboard`
+        window.location.href = `/cms/auth/callback?state=/cms/manager/dashboard`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
-        window.location.href = `/crms/auth/callback?state=/crms/sales/dashboard`
+        window.location.href = `/cms/auth/callback?state=/cms/sales/dashboard`
       }
     } else if (subsystemTitle === 'Smart Expense Reimbursement') {
       if (userRole.value === 'IT Admin') {

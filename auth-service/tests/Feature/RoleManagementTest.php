@@ -129,8 +129,8 @@ class RoleManagementTest extends TestCase
         [$user, $sessionId] = $this->getAdminUserWithSession();
         $role = Role::where('name', 'Sales')->first();
         
-        $permission1 = Permission::where('slug', 'crms.roles.manage')->first();
-        $permission2 = Permission::where('slug', 'crms.templates.manage')->first();
+        $permission1 = Permission::where('slug', 'cms.roles.manage')->first();
+        $permission2 = Permission::where('slug', 'cms.templates.manage')->first();
 
         // Seed some cache to ensure it's cleared
         $salesUser = User::where('email', 'sales@example.com')->first();

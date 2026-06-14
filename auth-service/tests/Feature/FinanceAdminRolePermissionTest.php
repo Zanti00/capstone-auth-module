@@ -253,7 +253,7 @@ class FinanceAdminRolePermissionTest extends TestCase
     public function test_finance_admin_can_view_and_sync_permission_roles_for_finance_roles()
     {
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
-        $permission = Permission::where('slug', 'crms.templates.use')->first();
+        $permission = Permission::where('slug', 'cms.templates.use')->first();
 
         // 1. View roles for permission -> only shows Manager and Employee (when requested by Finance Admin)
         $responseView = $this->actingAs($user, 'api')

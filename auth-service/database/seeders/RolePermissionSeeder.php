@@ -37,36 +37,36 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'View Audit Logs',       'slug' => 'view-audit-logs',      'system' => 'auth'],
             ['name' => 'Manage Departments',    'slug' => 'manage-departments',   'system' => 'auth'],
 
-            // CRMS Feature Permissions (legacy / internal)
-            ['name' => 'Manage CRMS Roles',    'slug' => 'crms.roles.manage',        'system' => 'crms'],
-            ['name' => 'Manage Templates',     'slug' => 'crms.templates.manage',    'system' => 'crms'],
-            ['name' => 'Use Templates',        'slug' => 'crms.templates.use',       'system' => 'crms'],
-            ['name' => 'OCR Upload',           'slug' => 'crms.ocr.upload',          'system' => 'crms'],
-            ['name' => 'OCR Process',          'slug' => 'crms.ocr.process',         'system' => 'crms'],
-            ['name' => 'OCR Review',           'slug' => 'crms.ocr.review',          'system' => 'crms'],
-            ['name' => 'Generate Draft',       'slug' => 'crms.contracts.generate',  'system' => 'crms'],
-            ['name' => 'Run Risk Assessment',  'slug' => 'crms.risk.assess',         'system' => 'crms'],
-            ['name' => 'View Risk Highlights', 'slug' => 'crms.risk.view',           'system' => 'crms'],
-            ['name' => 'Approve/Override Risk','slug' => 'crms.risk.approve',        'system' => 'crms'],
+            // CMS Feature Permissions (legacy / internal)
+            ['name' => 'Manage CMS Roles',     'slug' => 'cms.roles.manage',         'system' => 'cms'],
+            ['name' => 'Manage Templates',     'slug' => 'cms.templates.manage',     'system' => 'cms'],
+            ['name' => 'Use Templates',        'slug' => 'cms.templates.use',        'system' => 'cms'],
+            ['name' => 'OCR Upload',           'slug' => 'cms.ocr.upload',           'system' => 'cms'],
+            ['name' => 'OCR Process',          'slug' => 'cms.ocr.process',          'system' => 'cms'],
+            ['name' => 'OCR Review',           'slug' => 'cms.ocr.review',           'system' => 'cms'],
+            ['name' => 'Generate Draft',       'slug' => 'cms.contracts.generate',   'system' => 'cms'],
+            ['name' => 'Run Risk Assessment',  'slug' => 'cms.risk.assess',          'system' => 'cms'],
+            ['name' => 'View Risk Highlights', 'slug' => 'cms.risk.view',            'system' => 'cms'],
+            ['name' => 'Approve/Override Risk','slug' => 'cms.risk.approve',         'system' => 'cms'],
 
-            // CRMS CRUD Permissions — Contracts (maps to "Contracts" UI category)
-            ['name' => 'View Contracts',   'slug' => 'crms.contracts.view',   'system' => 'crms'],
-            ['name' => 'Create Contracts', 'slug' => 'crms.contracts.create', 'system' => 'crms'],
-            ['name' => 'Edit Contracts',   'slug' => 'crms.contracts.edit',   'system' => 'crms'],
-            ['name' => 'Delete Contracts', 'slug' => 'crms.contracts.delete', 'system' => 'crms'],
-            ['name' => 'Approve Contracts', 'slug' => 'crms.contracts.approve', 'system' => 'crms'],
+            // CMS CRUD Permissions — Contracts (maps to "Contracts" UI category)
+            ['name' => 'View Contracts',   'slug' => 'cms.contracts.view',   'system' => 'cms'],
+            ['name' => 'Create Contracts', 'slug' => 'cms.contracts.create', 'system' => 'cms'],
+            ['name' => 'Edit Contracts',   'slug' => 'cms.contracts.edit',   'system' => 'cms'],
+            ['name' => 'Delete Contracts', 'slug' => 'cms.contracts.delete', 'system' => 'cms'],
+            ['name' => 'Approve Contracts', 'slug' => 'cms.contracts.approve', 'system' => 'cms'],
 
-            // CRMS CRUD Permissions — User Management (maps to "User Management" UI category)
-            ['name' => 'View Users',   'slug' => 'crms.users.view',   'system' => 'crms'],
-            ['name' => 'Create Users', 'slug' => 'crms.users.create', 'system' => 'crms'],
-            ['name' => 'Edit Users',   'slug' => 'crms.users.edit',   'system' => 'crms'],
-            ['name' => 'Delete Users', 'slug' => 'crms.users.delete', 'system' => 'crms'],
+            // CMS CRUD Permissions — User Management (maps to "User Management" UI category)
+            ['name' => 'View Users',   'slug' => 'cms.users.view',   'system' => 'cms'],
+            ['name' => 'Create Users', 'slug' => 'cms.users.create', 'system' => 'cms'],
+            ['name' => 'Edit Users',   'slug' => 'cms.users.edit',   'system' => 'cms'],
+            ['name' => 'Delete Users', 'slug' => 'cms.users.delete', 'system' => 'cms'],
 
-            // CRMS CRUD Permissions — Partners (maps to "Business Partners & Suppliers" UI category)
-            ['name' => 'View Partners',   'slug' => 'crms.partners.view',   'system' => 'crms'],
-            ['name' => 'Create Partners', 'slug' => 'crms.partners.create', 'system' => 'crms'],
-            ['name' => 'Edit Partners',   'slug' => 'crms.partners.edit',   'system' => 'crms'],
-            ['name' => 'Delete Partners', 'slug' => 'crms.partners.delete', 'system' => 'crms'],
+            // CMS CRUD Permissions — Partners (maps to "Business Partners & Suppliers" UI category)
+            ['name' => 'View Partners',   'slug' => 'cms.partners.view',   'system' => 'cms'],
+            ['name' => 'Create Partners', 'slug' => 'cms.partners.create', 'system' => 'cms'],
+            ['name' => 'Edit Partners',   'slug' => 'cms.partners.edit',   'system' => 'cms'],
+            ['name' => 'Delete Partners', 'slug' => 'cms.partners.delete', 'system' => 'cms'],
 
 
             // PRS Permissions
@@ -104,54 +104,54 @@ class RolePermissionSeeder extends Seeder
             $role->permissions()->syncWithoutDetaching($authPermissions->pluck('id'));
         }
 
-        // 2. CRMS Admin — full access to everything
-        $crmsAdmin = \App\Models\Role::where('name', 'Admin')->first();
-        if ($crmsAdmin) {
+        // 2. CMS Admin — full access to everything
+        $cmsAdmin = \App\Models\Role::where('name', 'Admin')->first();
+        if ($cmsAdmin) {
             $adminPerms = \App\Models\Permission::whereIn('slug', [
-                'crms.roles.manage',
-                'crms.templates.manage',
-                'crms.templates.use',
-                'crms.ocr.upload',
-                'crms.ocr.process',
-                'crms.ocr.review',
-                'crms.contracts.generate',
-                'crms.risk.assess',
-                'crms.risk.view',
-                'crms.risk.approve',
+                'cms.roles.manage',
+                'cms.templates.manage',
+                'cms.templates.use',
+                'cms.ocr.upload',
+                'cms.ocr.process',
+                'cms.ocr.review',
+                'cms.contracts.generate',
+                'cms.risk.assess',
+                'cms.risk.view',
+                'cms.risk.approve',
                 // CRUD
-                'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.delete', 'crms.contracts.approve',
-                'crms.users.view',     'crms.users.create',     'crms.users.edit',     'crms.users.delete',
-                'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',  'crms.partners.delete',
+                'cms.contracts.view', 'cms.contracts.create', 'cms.contracts.edit', 'cms.contracts.delete', 'cms.contracts.approve',
+                'cms.users.view',     'cms.users.create',     'cms.users.edit',     'cms.users.delete',
+                'cms.partners.view',  'cms.partners.create',  'cms.partners.edit',  'cms.partners.delete',
                 'manage-users',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
                 'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
                 'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.settings.users.manage',
                 'prs.settings.departments.manage', 'prs.settings.products.manage', 'prs.settings.institutions.manage', 'prs.files.view',
             ])->get();
-            $crmsAdmin->permissions()->syncWithoutDetaching($adminPerms->pluck('id'));
+            $cmsAdmin->permissions()->syncWithoutDetaching($adminPerms->pluck('id'));
         }
 
-        // 3. CRMS Manager — broad access, cannot delete users or manage roles
-        $crmsManager = \App\Models\Role::where('name', 'Manager')->first();
-        if ($crmsManager) {
+        // 3. CMS Manager — broad access, cannot delete users or manage roles
+        $cmsManager = \App\Models\Role::where('name', 'Manager')->first();
+        if ($cmsManager) {
             $managerPerms = \App\Models\Permission::whereIn('slug', [
-                'crms.templates.use',
-                'crms.ocr.upload',
-                'crms.ocr.process',
-                'crms.ocr.review',
-                'crms.contracts.generate',
-                'crms.risk.assess',
-                'crms.risk.view',
-                'crms.risk.approve',
+                'cms.templates.use',
+                'cms.ocr.upload',
+                'cms.ocr.process',
+                'cms.ocr.review',
+                'cms.contracts.generate',
+                'cms.risk.assess',
+                'cms.risk.view',
+                'cms.risk.approve',
                 // CRUD
-                'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.approve',
-                'crms.users.view',
-                'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
+                'cms.contracts.view', 'cms.contracts.create', 'cms.contracts.edit', 'cms.contracts.approve',
+                'cms.users.view',
+                'cms.partners.view',  'cms.partners.create',  'cms.partners.edit',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
                 'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
                 'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.files.view',
             ])->get();
-            $crmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
+            $cmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
         }
 
         // 3b. Finance Manager — same default access as CRMS Manager, but scoped to Finance department
@@ -210,25 +210,25 @@ class RolePermissionSeeder extends Seeder
             $role->permissions()->syncWithoutDetaching($prsBasicPerms->pluck('id'));
         }
 
-        // 4. CRMS Sales — limited, view-only on most; own-record access enforced by app logic
-        $crmsSales = \App\Models\Role::where('name', 'Sales')->first();
-        if ($crmsSales) {
+        // 4. CMS Sales — limited, view-only on most; own-record access enforced by app logic
+        $cmsSales = \App\Models\Role::where('name', 'Sales')->first();
+        if ($cmsSales) {
             $salesPerms = \App\Models\Permission::whereIn('slug', [
-                'crms.templates.use',
-                'crms.ocr.upload',
-                'crms.ocr.process',
-                'crms.ocr.review',
-                'crms.contracts.generate',
-                'crms.risk.assess',
-                'crms.risk.view',
-                'crms.risk.approve',
+                'cms.templates.use',
+                'cms.ocr.upload',
+                'cms.ocr.process',
+                'cms.ocr.review',
+                'cms.contracts.generate',
+                'cms.risk.assess',
+                'cms.risk.view',
+                'cms.risk.approve',
                 // CRUD
-                'crms.contracts.view',
-                'crms.contracts.approve',
-                'crms.users.view',
-                'crms.partners.view',
+                'cms.contracts.view',
+                'cms.contracts.approve',
+                'cms.users.view',
+                'cms.partners.view',
             ])->get();
-            $crmsSales->permissions()->syncWithoutDetaching($salesPerms->pluck('id'));
+            $cmsSales->permissions()->syncWithoutDetaching($salesPerms->pluck('id'));
         }
     }
 }
