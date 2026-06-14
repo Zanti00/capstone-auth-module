@@ -93,6 +93,8 @@ class AuthController extends Controller
             CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
         )->withCookie(
             CookieHelper::makeAuthCookie('session_id', $result['session_id'], 60 * 24 * 30)
+        )->withCookie(
+            CookieHelper::makeStatusCookie('is_authenticated', 'true', 60 * 24 * 30)
         );
     }
 
@@ -117,6 +119,8 @@ class AuthController extends Controller
                 CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
             )->withCookie(
                 CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
+            )->withCookie(
+                CookieHelper::makeStatusCookie('is_authenticated', 'true', 60 * 24 * 30)
             );
         } catch (ValidationException $e) {
             return response()->json(['message' => $e->getMessage()], 401);
@@ -135,7 +139,8 @@ class AuthController extends Controller
             ->withCookie(CookieHelper::forgetAuthCookie('access_token'))
             ->withCookie(CookieHelper::forgetAuthCookie('refresh_token'))
             ->withCookie(CookieHelper::forgetAuthCookie('session_id'))
-            ->withCookie(CookieHelper::forgetAuthCookie('sb-pebzdnartcxnbskjhnhk-auth-token'));
+            ->withCookie(CookieHelper::forgetAuthCookie('sb-pebzdnartcxnbskjhnhk-auth-token'))
+            ->withCookie(CookieHelper::forgetStatusCookie('is_authenticated'));
     }
 
     public function forgotPassword(Request $request)
@@ -198,6 +203,21 @@ class AuthController extends Controller
     }
 
 
+    public function verifyPassword(Request $request)
+    {
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+        $user->load('credentials');
+
+        if (Hash::check($request->password, $user->credentials->password_hash)) {
+            return response()->json(['valid' => true, 'message' => 'Password verified.']);
+        }
+
+        return response()->json(['valid' => false, 'message' => 'Invalid password.'], 400);
+    }
 
     public function changePassword(Request $request)
     {

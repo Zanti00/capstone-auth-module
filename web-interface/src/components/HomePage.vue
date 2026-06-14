@@ -195,6 +195,8 @@ const openModule = (subsystemTitle: string) => {
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
         window.location.href = '/cms/sales/dashboard'
       }
+    } else if (subsystemTitle === 'Productivity Report System') {
+      window.location.href = '/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in'
     } else if (subsystemTitle === 'User & Access Management') {
     router.push('/admin')
   } else {
