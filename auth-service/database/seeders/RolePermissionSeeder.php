@@ -23,8 +23,6 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Sales',               'description' => 'Sales staff access'],
             ['name' => 'Finance',             'description' => 'Finance staff access'],
             ['name' => 'Employee',            'description' => 'Regular staff access'],
-            ['name' => 'Finance Manager',     'description' => 'Finance department manager'],
-            ['name' => 'Finance Employee',    'description' => 'Finance department employee'],
         ];
 
         // insertOrIgnore: skips duplicates instead of crashing

@@ -82,7 +82,10 @@ class CrmsAuthorizationTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $response = $this->actingAs($user)
+        $user->is_password_changed = true;
+        $user->save();
+
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->getJson('/api/me/permissions?system=crms');
 
@@ -97,6 +100,7 @@ class CrmsAuthorizationTest extends TestCase
                      'crms.risk.view',
                      'crms.risk.approve',
                      'crms.contracts.view',
+                     'crms.contracts.approve',
                      'crms.users.view',
                      'crms.partners.view'
                  ]]);

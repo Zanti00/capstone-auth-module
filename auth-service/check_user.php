@@ -15,3 +15,5 @@ if(!$user->credentials) {
 echo "User ID: " . $user->id . "\n";
 echo "Password Hash: " . $user->credentials->password_hash . "\n";
 echo "Hash check for 'password': " . (\Illuminate\Support\Facades\Hash::check('password', $user->credentials->password_hash) ? 'true' : 'false') . "\n";
+echo "Hash check for 'MolleR@06202020': " . (\Illuminate\Support\Facades\Hash::check('MolleR@06202020', $user->credentials->password_hash) ? 'true' : 'false') . "\n";
+echo "is_password_changed: " . ($user->is_password_changed ? 'true' : 'false') . "\n";

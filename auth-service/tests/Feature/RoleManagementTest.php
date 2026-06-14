@@ -25,6 +25,8 @@ class RoleManagementTest extends TestCase
     private function getAdminUserWithSession()
     {
         $user = User::where('email', 'admin@example.com')->first();
+        $user->is_password_changed = true;
+        $user->save();
         
         $sessionId = (string) \Illuminate\Support\Str::uuid();
         DB::table('user_sessions')->insert([
@@ -44,7 +46,7 @@ class RoleManagementTest extends TestCase
     {
         [$user, $sessionId] = $this->getAdminUserWithSession();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->getJson('/api/admin/roles');
 
@@ -57,7 +59,7 @@ class RoleManagementTest extends TestCase
     {
         [$user, $sessionId] = $this->getAdminUserWithSession();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/roles', [
                              'name' => 'Custom Role',
@@ -81,7 +83,7 @@ class RoleManagementTest extends TestCase
         [$user, $sessionId] = $this->getAdminUserWithSession();
         $role = Role::create(['name' => 'Old Name', 'description' => 'Old desc']);
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->putJson("/api/admin/roles/{$role->id}", [
                              'name' => 'New Name',
@@ -97,7 +99,7 @@ class RoleManagementTest extends TestCase
         [$user, $sessionId] = $this->getAdminUserWithSession();
         $role = Role::create(['name' => 'To Be Deleted', 'description' => 'To be deleted desc']);
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->deleteJson("/api/admin/roles/{$role->id}");
 
@@ -110,7 +112,7 @@ class RoleManagementTest extends TestCase
         [$user, $sessionId] = $this->getAdminUserWithSession();
         $role = Role::where('name', 'IT Admin')->first();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->deleteJson("/api/admin/roles/{$role->id}");
 
@@ -128,9 +130,9 @@ class RoleManagementTest extends TestCase
 
         // Seed some cache to ensure it's cleared
         $salesUser = User::where('email', 'sales@example.com')->first();
-        Cache::store('database')->put("permissions:user:{$salesUser->id}", ['dummy'], 300);
+        Cache::put("user_permissions:{$salesUser->id}", ['dummy'], 300);
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson("/api/admin/roles/{$role->id}/permissions", [
                              'permissions' => [$permission1->id, $permission2->id]
@@ -143,6 +145,6 @@ class RoleManagementTest extends TestCase
         $this->assertTrue($role->permissions->contains($permission2->id));
         
         // Assert cache invalidation
-        $this->assertNull(Cache::store('database')->get("permissions:user:{$salesUser->id}"));
+        $this->assertNull(Cache::get("user_permissions:{$salesUser->id}"));
     }
 }

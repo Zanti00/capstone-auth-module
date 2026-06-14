@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Laravel\Sanctum\PersonalAccessToken;
 use App\Services\InternalAuditService;
+
 
 class AuthService
 {
@@ -175,6 +175,7 @@ class AuthService
             'is_password_changed' => (bool) $user->is_password_changed,
             'profile' => $user->profile ? [
                 'first_name' => $user->profile->first_name,
+                'middle_name' => $user->profile->middle_name,
                 'last_name' => $user->profile->last_name,
                 'phone' => $user->profile->phone,
                 'address' => $user->profile->address,

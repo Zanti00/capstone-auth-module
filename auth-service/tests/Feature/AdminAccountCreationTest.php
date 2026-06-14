@@ -19,11 +19,14 @@ class AdminAccountCreationTest extends TestCase
         $this->seed(\Database\Seeders\RolePermissionSeeder::class);
         $this->seed(\Database\Seeders\DepartmentSeeder::class);
         $this->seed(\Database\Seeders\UserSeeder::class);
+        \Illuminate\Support\Facades\Mail::fake();
     }
 
     private function getUserWithSession($email)
     {
         $user = User::where('email', $email)->first();
+        $user->is_password_changed = true;
+        $user->save();
         
         $sessionId = (string) \Illuminate\Support\Str::uuid();
         DB::table('user_sessions')->insert([
@@ -45,7 +48,7 @@ class AdminAccountCreationTest extends TestCase
         $itDept = Department::where('name', 'IT')->first();
         $role = Role::where('name', 'Manager')->first();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/users', [
                              'first_name' => 'New',
@@ -63,9 +66,9 @@ class AdminAccountCreationTest extends TestCase
     {
         [$user, $sessionId] = $this->getUserWithSession('finance-admin@example.com');
         $financeDept = Department::where('name', 'Finance')->first();
-        $role = Role::where('name', 'Finance Manager')->first();
+        $role = Role::where('name', 'Manager')->first();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/users', [
                              'first_name' => 'New',
@@ -83,9 +86,9 @@ class AdminAccountCreationTest extends TestCase
     {
         [$user, $sessionId] = $this->getUserWithSession('finance-admin@example.com');
         $itDept = Department::where('name', 'IT')->first();
-        $role = Role::where('name', 'Finance Manager')->first();
+        $role = Role::where('name', 'Manager')->first();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/users', [
                              'first_name' => 'New',
@@ -105,7 +108,7 @@ class AdminAccountCreationTest extends TestCase
         $financeDept = Department::where('name', 'Finance')->first();
         $role = Role::where('name', 'Admin')->first();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/users', [
                              'first_name' => 'New',
@@ -116,6 +119,6 @@ class AdminAccountCreationTest extends TestCase
                          ]);
 
         $response->assertStatus(403)
-                 ->assertJsonFragment(['message' => 'You are only authorized to assign Finance Manager or Finance Employee roles.']);
+                 ->assertJsonFragment(['message' => 'You are only authorized to assign Manager or Employee roles.']);
     }
 }

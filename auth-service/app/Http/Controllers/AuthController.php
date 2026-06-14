@@ -131,7 +131,7 @@ class AuthController extends Controller
     {
         $refreshTokenPlain = $request->cookie('refresh_token');
         $user = $request->user();
-        $sessionId = $request->cookie('session_id') ?? $request->header('X-Session-ID');
+        $sessionId = $request->cookie('session_id') ?: $request->header('X-Session-ID');
 
         $this->authService->logout($refreshTokenPlain, $sessionId, $user, $request->ip(), $request->userAgent());
 
@@ -255,19 +255,21 @@ class AuthController extends Controller
             'email' => trim($request->input('email', '')),
             'first_name' => trim($request->input('first_name', '')),
             'last_name' => trim($request->input('last_name', '')),
+            'middle_name' => $request->has('middle_name') ? trim($request->input('middle_name', '')) : null,
             'phone' => trim($request->input('phone', '')),
         ]);
 
         $request->validate([
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
             'phone' => 'required|string|max:20',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
         ]);
 
         $updatedUser = $this->userService->updateProfile(
             $request->user(),
-            $request->only(['email', 'first_name', 'last_name', 'phone']),
+            $request->only(['email', 'first_name', 'last_name', 'middle_name', 'phone']),
             $request->ip(),
             $request->userAgent()
         );

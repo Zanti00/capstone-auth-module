@@ -23,11 +23,14 @@ class FinanceAdminRolePermissionTest extends TestCase
         $this->seed(\Database\Seeders\RolePermissionSeeder::class);
         $this->seed(\Database\Seeders\DepartmentSeeder::class);
         $this->seed(\Database\Seeders\UserSeeder::class);
+        \Illuminate\Support\Facades\Mail::fake();
     }
 
     private function getFinanceAdminUserWithSession()
     {
         $user = User::where('email', 'finance-admin@example.com')->first();
+        $user->is_password_changed = true;
+        $user->save();
         
         $sessionId = (string) Str::uuid();
         DB::table('user_sessions')->insert([
@@ -46,6 +49,8 @@ class FinanceAdminRolePermissionTest extends TestCase
     private function getITAdminUserWithSession()
     {
         $user = User::where('email', 'admin@example.com')->first();
+        $user->is_password_changed = true;
+        $user->save();
         
         $sessionId = (string) Str::uuid();
         DB::table('user_sessions')->insert([
@@ -65,32 +70,33 @@ class FinanceAdminRolePermissionTest extends TestCase
     {
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->getJson('/api/admin/roles');
 
         $response->assertStatus(200);
         
-        $roleNames = collect($response->json())->pluck('name')->toArray();
+        $roleNames = collect($response->json()['data'])->pluck('name')->toArray();
 
-        // Must contain only the allowed department roles
-        $this->assertContains('Finance Manager', $roleNames);
-        $this->assertContains('Finance Employee', $roleNames);
+        // Must contain only the allowed roles (Manager and Employee)
+        $this->assertContains('Manager', $roleNames);
+        $this->assertContains('Employee', $roleNames);
         
-        // Must NOT contain global admin/infrastructure roles
+        // Must NOT contain global admin/infrastructure roles or other department specific ones
         $this->assertNotContains('IT Admin', $roleNames);
         $this->assertNotContains('Super Admin', $roleNames);
-        $this->assertNotContains('Manager', $roleNames);
-        $this->assertNotContains('Employee', $roleNames);
+        $this->assertNotContains('Admin', $roleNames);
+        $this->assertNotContains('Sales', $roleNames);
+        $this->assertNotContains('Finance', $roleNames);
     }
 
     public function test_finance_admin_cannot_create_update_delete_roles()
     {
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
-        $financeManagerRole = Role::where('name', 'Finance Manager')->first();
+        $managerRole = Role::where('name', 'Manager')->first();
 
         // Create -> forbidden
-        $responseCreate = $this->actingAs($user)
+        $responseCreate = $this->actingAs($user, 'api')
                                ->withHeader('X-Session-ID', $sessionId)
                                ->postJson('/api/admin/roles', [
                                    'name' => 'Should Fail Role',
@@ -99,50 +105,50 @@ class FinanceAdminRolePermissionTest extends TestCase
         $responseCreate->assertStatus(403);
 
         // Update -> forbidden
-        $responseUpdate = $this->actingAs($user)
+        $responseUpdate = $this->actingAs($user, 'api')
                                ->withHeader('X-Session-ID', $sessionId)
-                               ->putJson("/api/admin/roles/{$financeManagerRole->id}", [
-                                   'name' => 'Finance Manager Updated',
+                               ->putJson("/api/admin/roles/{$managerRole->id}", [
+                                   'name' => 'Manager Updated',
                                    'description' => 'Will fail'
                                ]);
         $responseUpdate->assertStatus(403);
 
         // Delete -> forbidden
-        $responseDelete = $this->actingAs($user)
+        $responseDelete = $this->actingAs($user, 'api')
                                ->withHeader('X-Session-ID', $sessionId)
-                               ->deleteJson("/api/admin/roles/{$financeManagerRole->id}");
+                               ->deleteJson("/api/admin/roles/{$managerRole->id}");
         $responseDelete->assertStatus(403);
     }
 
     public function test_finance_admin_can_view_finance_role_permissions_and_sync()
     {
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
-        $financeManagerRole = Role::where('name', 'Finance Manager')->first();
+        $managerRole = Role::where('name', 'Manager')->first();
         $itAdminRole = Role::where('name', 'IT Admin')->first();
 
         // View allowed role permissions -> allowed
-        $responseView = $this->actingAs($user)
+        $responseView = $this->actingAs($user, 'api')
                              ->withHeader('X-Session-ID', $sessionId)
-                             ->getJson("/api/admin/roles/{$financeManagerRole->id}/permissions");
+                             ->getJson("/api/admin/roles/{$managerRole->id}/permissions");
         $responseView->assertStatus(200);
 
         // View disallowed role permissions -> forbidden
-        $responseViewDisallowed = $this->actingAs($user)
+        $responseViewDisallowed = $this->actingAs($user, 'api')
                                        ->withHeader('X-Session-ID', $sessionId)
                                        ->getJson("/api/admin/roles/{$itAdminRole->id}/permissions");
         $responseViewDisallowed->assertStatus(403);
 
         // Sync allowed role permissions -> allowed
         $permissions = Permission::limit(2)->pluck('id')->toArray();
-        $responseSync = $this->actingAs($user)
+        $responseSync = $this->actingAs($user, 'api')
                              ->withHeader('X-Session-ID', $sessionId)
-                             ->postJson("/api/admin/roles/{$financeManagerRole->id}/permissions", [
+                             ->postJson("/api/admin/roles/{$managerRole->id}/permissions", [
                                  'permissions' => $permissions
                              ]);
         $responseSync->assertStatus(200);
 
         // Sync disallowed role permissions -> forbidden
-        $responseSyncDisallowed = $this->actingAs($user)
+        $responseSyncDisallowed = $this->actingAs($user, 'api')
                                        ->withHeader('X-Session-ID', $sessionId)
                                        ->postJson("/api/admin/roles/{$itAdminRole->id}/permissions", [
                                            'permissions' => $permissions
@@ -153,34 +159,34 @@ class FinanceAdminRolePermissionTest extends TestCase
     public function test_finance_admin_can_only_see_finance_users_for_finance_roles()
     {
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
-        $financeManagerRole = Role::where('name', 'Finance Manager')->first();
+        $managerRole = Role::where('name', 'Manager')->first();
         
         $financeDept = Department::where('name', 'Finance')->first();
         $opsDept = Department::where('name', 'Operations')->first();
 
-        // User in Finance department with Finance Manager role
+        // User in Finance department with Manager role
         $financeUser = User::create(['email' => 'finance-user-test@example.com', 'is_active' => true]);
         UserProfile::create([
             'user_id' => $financeUser->id,
-            'role_id' => $financeManagerRole->id,
+            'role_id' => $managerRole->id,
             'department_id' => $financeDept->id,
             'first_name' => 'Finance',
             'last_name' => 'User'
         ]);
 
-        // User in Operations department with Finance Manager role (simulated cross-boundary user)
+        // User in Operations department with Manager role (simulated cross-boundary user)
         $opsUser = User::create(['email' => 'ops-user-test@example.com', 'is_active' => true]);
         UserProfile::create([
             'user_id' => $opsUser->id,
-            'role_id' => $financeManagerRole->id,
+            'role_id' => $managerRole->id,
             'department_id' => $opsDept->id,
             'first_name' => 'Ops',
             'last_name' => 'User'
         ]);
 
-        $response = $this->actingAs($user)
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
-                         ->getJson("/api/admin/roles/{$financeManagerRole->id}/users");
+                         ->getJson("/api/admin/roles/{$managerRole->id}/users");
 
         $response->assertStatus(200);
         
@@ -192,7 +198,7 @@ class FinanceAdminRolePermissionTest extends TestCase
     public function test_finance_admin_can_only_assign_finance_roles_to_finance_users()
     {
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
-        $financeManagerRole = Role::where('name', 'Finance Manager')->first();
+        $managerRole = Role::where('name', 'Manager')->first();
         $itAdminRole = Role::where('name', 'IT Admin')->first();
 
         $financeDept = Department::where('name', 'Finance')->first();
@@ -202,7 +208,7 @@ class FinanceAdminRolePermissionTest extends TestCase
         $financeUser = User::create(['email' => 'finance-user-assign@sbsi.com', 'is_active' => true]);
         UserProfile::create([
             'user_id' => $financeUser->id,
-            'role_id' => Role::where('name', 'Finance Employee')->first()->id,
+            'role_id' => Role::where('name', 'Employee')->first()->id,
             'department_id' => $financeDept->id,
             'first_name' => 'Finance',
             'last_name' => 'User'
@@ -219,16 +225,16 @@ class FinanceAdminRolePermissionTest extends TestCase
         ]);
 
         // 1. Assign allowed role to Finance user -> allowed
-        $response1 = $this->actingAs($user)
+        $response1 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->patchJson("/api/admin/users/{$financeUser->id}/role", [
-                              'role_id' => $financeManagerRole->id
+                              'role_id' => $managerRole->id
                           ]);
         $response1->assertStatus(200);
-        $this->assertEquals($financeManagerRole->id, $financeUser->fresh()->profile->role_id);
+        $this->assertEquals($managerRole->id, $financeUser->fresh()->profile->role_id);
 
         // 2. Assign disallowed role to Finance user -> forbidden
-        $response2 = $this->actingAs($user)
+        $response2 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->patchJson("/api/admin/users/{$financeUser->id}/role", [
                               'role_id' => $itAdminRole->id
@@ -236,10 +242,10 @@ class FinanceAdminRolePermissionTest extends TestCase
         $response2->assertStatus(403);
 
         // 3. Assign allowed role to Operations user -> forbidden
-        $response3 = $this->actingAs($user)
+        $response3 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->patchJson("/api/admin/users/{$opsUser->id}/role", [
-                              'role_id' => $financeManagerRole->id
+                              'role_id' => $managerRole->id
                           ]);
         $response3->assertStatus(403);
     }
@@ -249,84 +255,84 @@ class FinanceAdminRolePermissionTest extends TestCase
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
         $permission = Permission::where('slug', 'crms.templates.use')->first();
 
-        // 1. View roles for permission -> only shows Finance Manager and Finance Employee
-        $responseView = $this->actingAs($user)
+        // 1. View roles for permission -> only shows Manager and Employee (when requested by Finance Admin)
+        $responseView = $this->actingAs($user, 'api')
                              ->withHeader('X-Session-ID', $sessionId)
                              ->getJson("/api/admin/permissions/{$permission->id}/roles");
         $responseView->assertStatus(200);
         
         $roleNames = collect($responseView->json())->pluck('name')->toArray();
         foreach ($roleNames as $name) {
-            $this->assertContains($name, ['Finance Manager', 'Finance Employee']);
+            $this->assertContains($name, ['Manager', 'Employee']);
         }
 
         // 2. Sync allowed roles -> allowed
-        $financeManagerRole = Role::where('name', 'Finance Manager')->first();
-        $financeEmployeeRole = Role::where('name', 'Finance Employee')->first();
+        $managerRole = Role::where('name', 'Manager')->first();
+        $employeeRole = Role::where('name', 'Employee')->first();
 
         // Must preserve existing disallowed roles
         $currentRoleIds = $permission->roles()->pluck('roles.id')->toArray();
-        $allowedRoles = Role::whereIn('name', ['Finance Manager', 'Finance Employee'])->pluck('id')->toArray();
+        $allowedRoles = Role::whereIn('name', ['Manager', 'Employee'])->pluck('id')->toArray();
         $disallowedRoles = array_diff($currentRoleIds, $allowedRoles);
 
-        $responseSync = $this->actingAs($user)
+        $responseSync = $this->actingAs($user, 'api')
                              ->withHeader('X-Session-ID', $sessionId)
                              ->postJson("/api/admin/permissions/{$permission->id}/roles", [
-                                 'role_ids' => array_merge($disallowedRoles, [$financeManagerRole->id, $financeEmployeeRole->id])
+                                 'role_ids' => array_merge($disallowedRoles, [$managerRole->id, $employeeRole->id])
                              ]);
         $responseSync->assertStatus(200);
 
         // 3. Sync including disallowed roles (trying to add a new disallowed one) -> forbidden
         $itAdminRole = Role::where('name', 'IT Admin')->first();
-        $responseSyncDisallowed = $this->actingAs($user)
+        $responseSyncDisallowed = $this->actingAs($user, 'api')
                                        ->withHeader('X-Session-ID', $sessionId)
                                        ->postJson("/api/admin/permissions/{$permission->id}/roles", [
-                                           'role_ids' => array_merge($disallowedRoles, [$financeManagerRole->id, $itAdminRole->id])
-                                       ]);
+                                           'role_ids' => array_merge($disallowedRoles, [$managerRole->id, $itAdminRole->id])
+                                        ]);
         $responseSyncDisallowed->assertStatus(403);
     }
 
     public function test_finance_admin_can_only_create_user_with_finance_roles_and_finance_dept()
     {
         [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
-        $financeManagerRole = Role::where('name', 'Finance Manager')->first();
-        $globalManagerRole = Role::where('name', 'Manager')->first();
+        $managerRole = Role::where('name', 'Manager')->first();
+        $itAdminRole = Role::where('name', 'IT Admin')->first();
         
         $financeDept = Department::where('name', 'Finance')->first();
         $opsDept = Department::where('name', 'Operations')->first();
 
-        // 1. Create user with Finance dept & Finance Manager role -> allowed
-        $response1 = $this->actingAs($user)
+        // 1. Create user with Finance dept & Manager role -> allowed
+        $response1 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->postJson('/api/admin/users', [
                               'email' => 'new-finance-mgr@sbsi.com',
                               'first_name' => 'New',
                               'last_name' => 'Manager',
-                              'role_id' => $financeManagerRole->id,
+                              'role_id' => $managerRole->id,
                               'department_id' => $financeDept->id,
                           ]);
         $response1->assertStatus(201);
 
-        // 2. Create user with Finance dept & Global Manager role -> forbidden
-        $response2 = $this->actingAs($user)
+        // 2. Create user with Finance dept & Disallowed role (IT Admin) -> forbidden
+        $response2 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->postJson('/api/admin/users', [
                               'email' => 'new-global-mgr@sbsi.com',
                               'first_name' => 'New',
                               'last_name' => 'Manager',
-                              'role_id' => $globalManagerRole->id,
+                              'role_id' => $itAdminRole->id,
                               'department_id' => $financeDept->id,
                           ]);
         $response2->assertStatus(403);
 
-        // 3. Create user with Operations dept & Finance Manager role -> forbidden
-        $response3 = $this->actingAs($user)
+        // 3. Create user with Operations dept & Manager role -> forbidden
+        $response3 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->postJson('/api/admin/users', [
                               'email' => 'new-ops-mgr@sbsi.com',
                               'first_name' => 'New',
                               'last_name' => 'Manager',
-                              'role_id' => $financeManagerRole->id,
+                              'role_id' => $managerRole->id,
                               'department_id' => $opsDept->id,
                           ]);
         $response3->assertStatus(403);

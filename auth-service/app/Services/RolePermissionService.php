@@ -47,7 +47,7 @@ class RolePermissionService
 
             if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
                 if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
-                    $allowed = ['Finance Manager', 'Finance Employee'];
+                    $allowed = ['Manager', 'Employee'];
                     $roles = array_filter($roles, function($r) use ($allowed) {
                         return in_array($r['name'], $allowed);
                     });
@@ -76,7 +76,7 @@ class RolePermissionService
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
             if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
-                $allowed = ['Finance Manager', 'Finance Employee'];
+                $allowed = ['Manager', 'Employee'];
                 $roles = array_filter($roles, function($r) use ($allowed) {
                     return in_array($r['name'], $allowed);
                 });
@@ -95,7 +95,7 @@ class RolePermissionService
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
             if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
-                $allowedNames = ['Finance Manager', 'Finance Employee'];
+                $allowedNames = ['Manager', 'Employee'];
             } else {
                 // Return empty paginator
                 return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage);
@@ -480,7 +480,7 @@ class RolePermissionService
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
             if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
-                $allowedNames = ['Finance Manager', 'Finance Employee'];
+                $allowedNames = ['Manager', 'Employee'];
                 $roles = $roles->filter(function($role) use ($allowedNames) {
                     return in_array($role->name, $allowedNames);
                 });
@@ -505,7 +505,7 @@ class RolePermissionService
                 $currentRoleIds = $permission->roles()->pluck('roles.id')->toArray();
 
                 // Allowed roles for Finance Admin
-                $allowedRoles = Role::whereIn('name', ['Finance Manager', 'Finance Employee'])->pluck('id')->toArray();
+                $allowedRoles = Role::whereIn('name', ['Manager', 'Employee'])->pluck('id')->toArray();
 
                 $disallowedRequested = array_diff($roleIds, $allowedRoles);
                 $disallowedCurrent = array_diff($currentRoleIds, $allowedRoles);
@@ -514,7 +514,7 @@ class RolePermissionService
                 sort($disallowedCurrent);
                 if ($disallowedRequested !== $disallowedCurrent) {
                     throw new HttpResponseException(
-                        response()->json(['message' => 'You are only authorized to map permissions to Finance Manager or Finance Employee roles.'], 403)
+                        response()->json(['message' => 'You are only authorized to map permissions to Manager or Employee roles.'], 403)
                     );
                 }
             } else {
@@ -582,7 +582,7 @@ class RolePermissionService
 
         if ($actorRole === 'Admin' && $actorDept === 'Finance') {
             $roleName = $role instanceof Role ? $role->name : $this->roleRepo->findById($role)?->name;
-            return in_array($roleName, ['Finance Manager', 'Finance Employee']);
+            return in_array($roleName, ['Manager', 'Employee']);
         }
 
         return false;

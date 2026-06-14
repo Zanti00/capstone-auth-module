@@ -20,7 +20,7 @@ class PermissionManagementTest extends TestCase
 
     private function getAdminHeaders()
     {
-        $admin = User::factory()->create(['is_active' => true]);
+        $admin = User::factory()->create(['is_active' => true, 'is_password_changed' => true]);
         $role = Role::firstOrCreate(['name' => 'IT Admin']);
         $permManageRoles = Permission::firstOrCreate(
             ['slug' => 'manage-roles'],
@@ -38,7 +38,7 @@ class PermissionManagementTest extends TestCase
             ['role_id' => $role->id]
         );
 
-        $accessToken = $admin->createToken('auth_token')->plainTextToken;
+        $accessToken = $admin->createToken('auth_token')->accessToken;
         $sessionId = (string) Str::uuid();
 
         DB::table('user_sessions')->insert([
@@ -98,7 +98,7 @@ class PermissionManagementTest extends TestCase
 
     public function test_permission_resolution_and_caching()
     {
-        $admin = User::factory()->create(['is_active' => true]);
+        $admin = User::factory()->create(['is_active' => true, 'is_password_changed' => true]);
         $role = Role::create(['name' => 'Test Role']);
         $permission = Permission::create([
             'name' => 'Test Perm',
@@ -117,13 +117,13 @@ class PermissionManagementTest extends TestCase
         $response = $this->getJson("/api/users/{$admin->id}/permissions", $headers);
         $response->assertStatus(200)->assertJson(['test-perm']);
 
-        $this->assertTrue(Cache::store('database')->has("permissions:user:{$admin->id}"));
-        $this->assertEquals(['test-perm'], Cache::store('database')->get("permissions:user:{$admin->id}"));
+        $this->assertTrue(Cache::has("user_permissions:{$admin->id}"));
+        $this->assertEquals(['test-perm'], Cache::get("user_permissions:{$admin->id}"));
     }
 
     public function test_cache_invalidation_on_role_sync()
     {
-        $user = User::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['is_active' => true, 'is_password_changed' => true]);
         $role = Role::create(['name' => 'Sync Role']);
         $perm1 = Permission::create(['name' => 'Perm 1', 'slug' => 'perm-1']);
         $role->permissions()->syncWithoutDetaching([$perm1->id]);
@@ -137,7 +137,7 @@ class PermissionManagementTest extends TestCase
 
         // Populate cache
         $this->getJson("/api/users/{$user->id}/permissions", $headers);
-        $this->assertTrue(Cache::store('database')->has("permissions:user:{$user->id}"));
+        $this->assertTrue(Cache::has("user_permissions:{$user->id}"));
 
         // Sync new permissions to role
         $perm2 = Permission::create(['name' => 'Perm 2', 'slug' => 'perm-2']);
@@ -146,7 +146,7 @@ class PermissionManagementTest extends TestCase
         ], $headers);
 
         // Cache should be invalidated
-        $this->assertFalse(Cache::store('database')->has("permissions:user:{$user->id}"));
+        $this->assertFalse(Cache::has("user_permissions:{$user->id}"));
 
         // New call should have updated permissions
         $response = $this->getJson("/api/users/{$user->id}/permissions", $headers);
@@ -155,7 +155,7 @@ class PermissionManagementTest extends TestCase
 
     public function test_cache_invalidation_on_permission_update()
     {
-        $user = User::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['is_active' => true, 'is_password_changed' => true]);
         $role = Role::create(['name' => 'Update Role']);
         $perm = Permission::create(['name' => 'Old Name', 'slug' => 'old-slug']);
         $role->permissions()->syncWithoutDetaching([$perm->id]);
@@ -169,7 +169,7 @@ class PermissionManagementTest extends TestCase
 
         // Populate cache
         $this->getJson("/api/users/{$user->id}/permissions", $headers);
-        $this->assertTrue(Cache::store('database')->has("permissions:user:{$user->id}"));
+        $this->assertTrue(Cache::has("user_permissions:{$user->id}"));
 
         // Update permission
         $this->putJson("/api/admin/permissions/{$perm->id}", [
@@ -178,12 +178,12 @@ class PermissionManagementTest extends TestCase
         ], $headers);
 
         // Cache should be invalidated
-        $this->assertFalse(Cache::store('database')->has("permissions:user:{$user->id}"));
+        $this->assertFalse(Cache::has("user_permissions:{$user->id}"));
     }
 
     public function test_cache_invalidation_on_permission_roles_sync()
     {
-        $user = User::factory()->create(['is_active' => true]);
+        $user = User::factory()->create(['is_active' => true, 'is_password_changed' => true]);
         $role = Role::create(['name' => 'Sync Roles Role']);
         $perm = Permission::create(['name' => 'Perm X', 'slug' => 'perm-x']);
         // No assignment yet
@@ -197,7 +197,7 @@ class PermissionManagementTest extends TestCase
 
         // Populate cache (should be empty array)
         $this->getJson("/api/users/{$user->id}/permissions", $headers);
-        $this->assertTrue(Cache::store('database')->has("permissions:user:{$user->id}"));
+        $this->assertTrue(Cache::has("user_permissions:{$user->id}"));
 
         // Assign permission to role from the permission side
         $this->postJson("/api/admin/permissions/{$perm->id}/roles", [
@@ -205,7 +205,7 @@ class PermissionManagementTest extends TestCase
         ], $headers);
 
         // Cache should be invalidated
-        $this->assertFalse(Cache::store('database')->has("permissions:user:{$user->id}"));
+        $this->assertFalse(Cache::has("user_permissions:{$user->id}"));
 
         // New call should have the permission
         $response = $this->getJson("/api/users/{$user->id}/permissions", $headers);
