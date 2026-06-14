@@ -27,9 +27,14 @@ export function useAuth() {
     } catch (error: any) {
       if (error.response) {
         if (error.response.status === 422) {
-          loginErrors.value = error.response.data.errors
+          loginErrors.value = error.response.data.errors || {}
+          // Set a friendly general error message from the validation errors
+          const validationMessage = error.response.data.errors?.email?.[0] || 
+                                    error.response.data.errors?.password?.[0] || 
+                                    error.response.data.message;
+          loginGeneralError.value = validationMessage || 'Invalid email or password.';
         } else if (error.response.status === 429) {
-          loginGeneralError.value = error.response.data.message
+          loginGeneralError.value = error.response.data.message || 'Too many attempts. Please try again later.'
         } else {
           loginGeneralError.value = error.response.data.message || 'An error occurred during login.'
         }
