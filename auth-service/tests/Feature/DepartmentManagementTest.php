@@ -97,7 +97,7 @@ class DepartmentManagementTest extends TestCase
                          ->getJson('/api/admin/departments');
 
         $response->assertStatus(200)
-                 ->assertJsonCount(1);
+                 ->assertJsonCount(1, 'data');
     }
 
     public function test_non_admin_cannot_list_departments()

@@ -47,6 +47,7 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'first_name'      => 'required|string|max:255',
+            'middle_name'     => 'nullable|string|max:255',
             'last_name'       => 'required|string|max:255',
             'email'           => ['required', 'email', 'unique:users,email', 'regex:/@sbsi\.com$/i'],
             'role_id'         => 'required_without:role_name|nullable|exists:roles,id',

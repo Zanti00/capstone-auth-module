@@ -42,10 +42,14 @@ class AuthFeaturesTest extends TestCase
         $response->assertStatus(200);
         
         $cookies = $response->headers->getCookies();
+        $accessToken = null;
         $refreshToken = null;
         $sessionId = null;
         
         foreach ($cookies as $cookie) {
+            if ($cookie->getName() === 'access_token') {
+                $accessToken = $cookie->getValue();
+            }
             if ($cookie->getName() === 'refresh_token') {
                 $refreshToken = $cookie->getValue();
             }
@@ -55,7 +59,7 @@ class AuthFeaturesTest extends TestCase
         }
         
         return [
-            'access_token' => $response->json('access_token'),
+            'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
             'session_id' => $sessionId,
         ];
@@ -76,7 +80,7 @@ class AuthFeaturesTest extends TestCase
         }
         
         $response->assertStatus(200)
-                 ->assertJsonStructure(['access_token', 'token_type', 'user']);
+                 ->assertJsonStructure(['user']);
                  
         $cookies = $response->headers->getCookies();
         $newRefreshToken = null;

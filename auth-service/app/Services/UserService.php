@@ -136,6 +136,7 @@ class UserService
 
             $this->userRepo->createProfile($user->id, [
                 'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
                 'last_name' => $validated['last_name'],
                 'role_id' => $validated['role_id'],
                 'department_id' => $validated['department_id'],
@@ -257,6 +258,7 @@ class UserService
 
         $this->userRepo->updateProfile($user->id, [
             'first_name' => $validatedData['first_name'] ?? $user->profile?->first_name,
+            'middle_name' => $validatedData['middle_name'] ?? $user->profile?->middle_name,
             'last_name' => $validatedData['last_name'] ?? $user->profile?->last_name,
             'phone' => $validatedData['phone'] ?? $user->profile?->phone,
         ]);
@@ -278,6 +280,7 @@ class UserService
             [
                 'email' => $user->email,
                 'first_name' => $user->profile->first_name,
+                'middle_name' => $user->profile->middle_name,
                 'last_name' => $user->profile->last_name,
             ],
             $user
@@ -287,6 +290,7 @@ class UserService
             'id' => $user->id,
             'email' => $user->email,
             'first_name' => $user->profile->first_name ?? '',
+            'middle_name' => $user->profile->middle_name ?? '',
             'last_name' => $user->profile->last_name ?? '',
             'role' => $user->profile->role->name ?? '',
             'department' => $user->profile->department->name ?? '',
