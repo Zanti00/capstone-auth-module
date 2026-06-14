@@ -70,6 +70,20 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Edit Partners',   'slug' => 'crms.partners.edit',   'system' => 'crms'],
             ['name' => 'Delete Partners', 'slug' => 'crms.partners.delete', 'system' => 'crms'],
 
+
+            // PRS Permissions
+            ['name' => 'View PRS Dashboard', 'slug' => 'prs.dashboard.view', 'system' => 'prs'],
+            ['name' => 'View PRS Activity Log', 'slug' => 'prs.activity-log.view', 'system' => 'prs'],
+            ['name' => 'Create PRS Submissions', 'slug' => 'prs.submissions.create', 'system' => 'prs'],
+            ['name' => 'Validate PRS Submissions', 'slug' => 'prs.submissions.validate', 'system' => 'prs'],
+            ['name' => 'Manage PRS Itineraries', 'slug' => 'prs.itineraries.manage', 'system' => 'prs'],
+            ['name' => 'View PRS Leaderboard', 'slug' => 'prs.leaderboard.view', 'system' => 'prs'],
+            ['name' => 'View PRS Reports', 'slug' => 'prs.reports.view', 'system' => 'prs'],
+            ['name' => 'Manage PRS Users', 'slug' => 'prs.settings.users.manage', 'system' => 'prs'],
+            ['name' => 'Manage PRS Departments', 'slug' => 'prs.settings.departments.manage', 'system' => 'prs'],
+            ['name' => 'Manage PRS Products', 'slug' => 'prs.settings.products.manage', 'system' => 'prs'],
+            ['name' => 'Manage PRS Institutions', 'slug' => 'prs.settings.institutions.manage', 'system' => 'prs'],
+            ['name' => 'View PRS Files', 'slug' => 'prs.files.view', 'system' => 'prs'],
             // SERMS Permissions
             ['name' => 'Manage Reimbursements', 'slug' => 'serms.reimbursements.manage', 'system' => 'serms'],
             ['name' => 'Manage Liquidations',   'slug' => 'serms.liquidations.manage',   'system' => 'serms'],
@@ -112,6 +126,9 @@ class RolePermissionSeeder extends Seeder
                 'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',  'crms.partners.delete',
                 'manage-users',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
+                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
+                'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.settings.users.manage',
+                'prs.settings.departments.manage', 'prs.settings.products.manage', 'prs.settings.institutions.manage', 'prs.files.view',
             ])->get();
             $crmsAdmin->permissions()->syncWithoutDetaching($adminPerms->pluck('id'));
         }
@@ -133,6 +150,8 @@ class RolePermissionSeeder extends Seeder
                 'crms.users.view',
                 'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
+                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
+                'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.files.view',
             ])->get();
             $crmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
         }
@@ -154,8 +173,43 @@ class RolePermissionSeeder extends Seeder
                 'crms.users.view',
                 'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
+                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
+                'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.settings.users.manage',
+                'prs.settings.departments.manage', 'prs.settings.products.manage', 'prs.settings.institutions.manage', 'prs.files.view',
             ])->get();
             $financeManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
+        }
+
+
+        // PRS role assignments
+        $prsAllPerms = \App\Models\Permission::where('system', 'prs')->get();
+        $prsBasicPerms = \App\Models\Permission::whereIn('slug', [
+            'prs.dashboard.view',
+            'prs.activity-log.view',
+            'prs.submissions.create',
+            'prs.leaderboard.view',
+            'prs.files.view',
+        ])->get();
+
+        $prsValidationPerms = \App\Models\Permission::whereIn('slug', [
+            'prs.dashboard.view',
+            'prs.activity-log.view',
+            'prs.submissions.validate',
+            'prs.itineraries.manage',
+            'prs.leaderboard.view',
+            'prs.files.view',
+        ])->get();
+
+        foreach (\App\Models\Role::whereIn('name', ['Super Admin', 'IT Admin', 'Admin'])->get() as $role) {
+            $role->permissions()->syncWithoutDetaching($prsAllPerms->pluck('id'));
+        }
+
+        foreach (\App\Models\Role::whereIn('name', ['Manager', 'Finance Manager'])->get() as $role) {
+            $role->permissions()->syncWithoutDetaching($prsValidationPerms->pluck('id'));
+        }
+
+        foreach (\App\Models\Role::whereIn('name', ['Sales', 'Employee', 'Finance', 'Finance Employee'])->get() as $role) {
+            $role->permissions()->syncWithoutDetaching($prsBasicPerms->pluck('id'));
         }
 
         // 4. CRMS Sales — limited, view-only on most; own-record access enforced by app logic

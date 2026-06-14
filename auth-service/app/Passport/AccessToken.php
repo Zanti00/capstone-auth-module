@@ -36,10 +36,7 @@ class AccessToken extends PassportAccessToken
         \Illuminate\Support\Facades\Log::info("App\Passport\AccessToken::convertToJWT called with userIdentifier: " . json_encode($userIdentifier) . ". Found user: " . ($user ? 'Yes' : 'No'));
         
         if ($user) {
-            $builder = $builder->withClaim('email', $user->email)
-                               ->withClaim('first_name', $user->profile?->first_name)
-                               ->withClaim('last_name', $user->profile?->last_name)
-                               ->withClaim('role', $user->profile?->role?->name)
+            $builder = $builder->withClaim('role', $user->profile?->role?->name)
                                ->withClaim('department', $user->profile?->department?->name);
         }
 

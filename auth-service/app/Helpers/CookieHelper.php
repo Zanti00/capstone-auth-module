@@ -4,6 +4,11 @@ namespace App\Helpers;
 
 class CookieHelper
 {
+    private static function secureAuthCookies(): bool
+    {
+        return (bool) config('session.secure', app()->environment('production'));
+    }
+
     /**
      * Create a standard authentication cookie with secure and Strict SameSite attributes.
      *
@@ -20,7 +25,7 @@ class CookieHelper
             $minutes,
             null, // path
             null, // domain
-            true, // Secure
+            self::secureAuthCookies(), // Secure
             true, // HttpOnly
             false, // raw
             'Strict' // SameSite
@@ -41,7 +46,7 @@ class CookieHelper
             -2628000, // Expire far in the past
             null, // path
             null, // domain
-            true, // Secure
+            self::secureAuthCookies(), // Secure
             true, // HttpOnly
             false, // raw
             'Strict' // SameSite

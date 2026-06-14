@@ -198,6 +198,21 @@ class AuthController extends Controller
     }
 
 
+    public function verifyPassword(Request $request)
+    {
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+        $user->load('credentials');
+
+        if (Hash::check($request->password, $user->credentials->password_hash)) {
+            return response()->json(['valid' => true, 'message' => 'Password verified.']);
+        }
+
+        return response()->json(['valid' => false, 'message' => 'Invalid password.'], 400);
+    }
 
     public function changePassword(Request $request)
     {

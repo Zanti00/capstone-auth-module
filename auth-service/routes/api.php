@@ -21,6 +21,7 @@ Route::middleware(['auth:api', 'active.session'])->group(function () {
     // Routes that require password change
     Route::middleware('require.password.change')->group(function () {
         Route::post('/send-verification', [AuthController::class, 'sendVerification']);
+        Route::post('/verify-password', [AuthController::class, 'verifyPassword']);
         Route::get('/user', function (Request $request) {
             return $request->user();
         });
