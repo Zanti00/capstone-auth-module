@@ -120,7 +120,7 @@ class RolePermissionService
 
         $role = $this->roleRepo->create($data);
 
-        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
+        $this->invalidateRoleCaches();
 
         $this->auditLogRepo->log($actor ? $actor->id : null, 'ROLE_CREATED', "Created role: {$role->name}", $ip, $userAgent);
 
@@ -167,7 +167,7 @@ class RolePermissionService
 
         $this->roleRepo->update($id, $data);
 
-        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
+        $this->invalidateRoleCaches();
 
         $role->refresh();
 
@@ -211,7 +211,7 @@ class RolePermissionService
         $roleName = $role->name;
         $this->roleRepo->delete($id);
 
-        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
+        $this->invalidateRoleCaches();
 
         $this->auditLogRepo->log($actor ? $actor->id : null, 'ROLE_DELETED', "Deleted role: {$roleName}", $ip, $userAgent);
 
@@ -564,6 +564,16 @@ class RolePermissionService
             Cache::forget("user_permissions:{$userId}");
         } catch (\Exception $e) {
             Log::warning('Failed to invalidate permission cache', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
+    }
+
+    private function invalidateRoleCaches(): void
+    {
+        try {
+            Cache::forget('roles:list');
+            Cache::forget('roles:all');
+        } catch (\Exception $e) {
+            Log::warning('Failed to invalidate role caches', ['error' => $e->getMessage()]);
         }
     }
 
