@@ -52,4 +52,48 @@ class CookieHelper
             'Strict' // SameSite
         );
     }
+
+    /**
+     * Create a non-HttpOnly status cookie to let the frontend know the user is authenticated.
+     *
+     * @param string $name
+     * @param string $value
+     * @param int $minutes
+     * @return \Symfony\Component\HttpFoundation\Cookie
+     */
+    public static function makeStatusCookie(string $name, string $value, int $minutes)
+    {
+        return cookie(
+            $name,
+            $value,
+            $minutes,
+            null, // path
+            null, // domain
+            self::secureAuthCookies(), // Secure
+            false, // HttpOnly - FALSE so JS can read it
+            false, // raw
+            'Strict' // SameSite
+        );
+    }
+
+    /**
+     * Create an expired status cookie.
+     *
+     * @param string $name
+     * @return \Symfony\Component\HttpFoundation\Cookie
+     */
+    public static function forgetStatusCookie(string $name)
+    {
+        return cookie(
+            $name,
+            '',
+            -2628000,
+            null, // path
+            null, // domain
+            self::secureAuthCookies(), // Secure
+            false, // HttpOnly
+            false, // raw
+            'Strict' // SameSite
+        );
+    }
 }

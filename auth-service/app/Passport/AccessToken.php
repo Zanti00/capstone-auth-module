@@ -37,7 +37,10 @@ class AccessToken extends PassportAccessToken
         
         if ($user) {
             $builder = $builder->withClaim('role', $user->profile?->role?->name)
-                               ->withClaim('department', $user->profile?->department?->name);
+                               ->withClaim('department', $user->profile?->department?->name)
+                               ->withClaim('email', $user->email)
+                               ->withClaim('first_name', $user->profile?->first_name)
+                               ->withClaim('last_name', $user->profile?->last_name);
         }
 
         return $builder
