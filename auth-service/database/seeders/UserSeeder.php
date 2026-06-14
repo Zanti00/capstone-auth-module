@@ -67,9 +67,12 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($usersToSeed as $userData) {
-            $user = \App\Models\User::firstOrCreate(
+            $user = \App\Models\User::updateOrCreate(
                 ['email' => $userData['email']],
-                ['is_active' => true]
+                [
+                    'is_active' => true,
+                    'is_password_changed' => true,
+                ]
             );
 
             \App\Models\UserCredential::updateOrCreate(
