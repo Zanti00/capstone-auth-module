@@ -46,6 +46,7 @@ class InternalVerifyTokenController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'email' => $user->email,
+                    'name' => trim(($user->profile?->first_name ?? '') . ' ' . ($user->profile?->last_name ?? '')),
                     'role' => $user->profile?->role?->name,
                     'department' => $user->profile?->department?->name,
                     'permissions' => $permissions,
