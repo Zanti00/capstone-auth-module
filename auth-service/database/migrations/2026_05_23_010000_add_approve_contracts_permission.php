@@ -14,16 +14,16 @@ return new class extends Migration
     {
         // Ensure permission exists
         DB::table('permissions')->updateOrInsert(
-            ['slug' => 'crms.contracts.approve'],
+            ['slug' => 'cms.contracts.approve'],
             [
                 'name' => 'Approve Contracts',
-                'system' => 'crms',
+                'system' => 'cms',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
         );
 
-        $permission = DB::table('permissions')->where('slug', 'crms.contracts.approve')->first();
+        $permission = DB::table('permissions')->where('slug', 'cms.contracts.approve')->first();
         
         if ($permission) {
             $permissionId = $permission->id;
@@ -46,7 +46,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        $permission = DB::table('permissions')->where('slug', 'crms.contracts.approve')->first();
+        $permission = DB::table('permissions')->where('slug', 'cms.contracts.approve')->first();
 
         if ($permission) {
             DB::table('role_permission')->where('permission_id', $permission->id)->delete();

@@ -14,7 +14,7 @@ class InternalAuditService
         $secret = env('INTERNAL_SERVICE_SECRET');
 
         if (!$secret) {
-            Log::warning('INTERNAL_SERVICE_SECRET is not configured. CRMS Audit Log push skipped.');
+            Log::warning('INTERNAL_SERVICE_SECRET is not configured. CMS Audit Log push skipped.');
             return;
         }
 
@@ -44,7 +44,7 @@ class InternalAuditService
                 'new_data' => $context,
             ], $userDetails));
         } catch (\Exception $e) {
-            Log::error('Failed to push audit event to CRMS: ' . $e->getMessage());
+            Log::error('Failed to push audit event to CMS: ' . $e->getMessage());
         }
     }
 }
