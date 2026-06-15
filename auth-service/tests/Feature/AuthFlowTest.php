@@ -39,6 +39,7 @@ class AuthFlowTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'Password123!',
         ]);
+        $response->dump();
 
         $response->assertStatus(200);
         $response->assertJsonStructure([

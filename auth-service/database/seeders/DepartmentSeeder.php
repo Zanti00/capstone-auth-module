@@ -12,7 +12,7 @@ class DepartmentSeeder extends Seeder
         $departments = [
             ['name' => 'IT'],
             ['name' => 'Human Resources'],
-            ['name' => 'Finance'],
+            ['name' => 'Sales & Marketing'],
             ['name' => 'Operations'],
         ];
 

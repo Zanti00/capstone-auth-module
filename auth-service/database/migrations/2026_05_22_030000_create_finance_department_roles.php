@@ -44,7 +44,7 @@ return new class extends Migration
         $financeManager->permissions()->syncWithoutDetaching($managerPerms);
 
         // 3. Migrate existing Finance users who have Manager/Employee roles to the new department-specific roles
-        $financeDept = DB::table('departments')->where('name', 'Finance')->first();
+        $financeDept = DB::table('departments')->where('name', 'Sales & Marketing')->first();
         if ($financeDept) {
             $managerRole = DB::table('roles')->where('name', 'Manager')->first();
             $employeeRole = DB::table('roles')->where('name', 'Employee')->first();

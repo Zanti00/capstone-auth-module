@@ -62,29 +62,29 @@ class AdminAccountCreationTest extends TestCase
                  ->assertJsonFragment(['email' => 'new.it@sbsi.com']);
     }
 
-    public function test_finance_admin_can_create_account_for_finance_department()
+    public function test_sales_marketing_admin_can_create_account_for_sales_marketing_department()
     {
-        [$user, $sessionId] = $this->getUserWithSession('finance-admin@example.com');
-        $financeDept = Department::where('name', 'Finance')->first();
+        [$user, $sessionId] = $this->getUserWithSession('sales-marketing-admin@example.com');
+        $salesMarketingDept = Department::where('name', 'Sales & Marketing')->first();
         $role = Role::where('name', 'Manager')->first();
 
         $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/users', [
                              'first_name' => 'New',
-                             'last_name' => 'FinanceUser',
-                             'email' => 'new.finance@sbsi.com',
+                             'last_name' => 'SalesMarketingUser',
+                             'email' => 'new.sales-marketing@sbsi.com',
                              'role_id' => $role->id,
-                             'department_id' => $financeDept->id
+                             'department_id' => $salesMarketingDept->id
                          ]);
 
         $response->dump()->assertStatus(201)
-                 ->assertJsonFragment(['email' => 'new.finance@sbsi.com']);
+                 ->assertJsonFragment(['email' => 'new.sales-marketing@sbsi.com']);
     }
 
-    public function test_finance_admin_cannot_create_account_for_other_departments()
+    public function test_sales_marketing_admin_cannot_create_account_for_other_departments()
     {
-        [$user, $sessionId] = $this->getUserWithSession('finance-admin@example.com');
+        [$user, $sessionId] = $this->getUserWithSession('sales-marketing-admin@example.com');
         $itDept = Department::where('name', 'IT')->first();
         $role = Role::where('name', 'Manager')->first();
 
@@ -99,23 +99,23 @@ class AdminAccountCreationTest extends TestCase
                          ]);
 
         $response->assertStatus(403)
-                 ->assertJsonFragment(['message' => 'You can only create accounts for the Finance department.']);
+                 ->assertJsonFragment(['message' => 'You can only create accounts for the Sales & Marketing department.']);
     }
 
-    public function test_finance_admin_cannot_assign_admin_role()
+    public function test_sales_marketing_admin_cannot_assign_admin_role()
     {
-        [$user, $sessionId] = $this->getUserWithSession('finance-admin@example.com');
-        $financeDept = Department::where('name', 'Finance')->first();
+        [$user, $sessionId] = $this->getUserWithSession('sales-marketing-admin@example.com');
+        $salesMarketingDept = Department::where('name', 'Sales & Marketing')->first();
         $role = Role::where('name', 'Admin')->first();
 
         $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
                          ->postJson('/api/admin/users', [
                              'first_name' => 'New',
-                             'last_name' => 'FinanceUser',
-                             'email' => 'new.finance2@sbsi.com',
+                             'last_name' => 'SalesMarketingUser',
+                             'email' => 'new.sales-marketing2@sbsi.com',
                              'role_id' => $role->id,
-                             'department_id' => $financeDept->id
+                             'department_id' => $salesMarketingDept->id
                          ]);
 
         $response->assertStatus(403)

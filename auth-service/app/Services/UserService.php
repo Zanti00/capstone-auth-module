@@ -56,7 +56,7 @@ class UserService
         ]);
 
         if ($actor && $actor->profile?->role?->name !== 'IT Admin' && $actor->profile?->role?->name !== 'Super Admin') {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
                 $filters['department_limit_id'] = $actor->profile->department_id;
             } else {
                 Log::info('paginateUsers forcing empty', ['actor_role' => $actor?->profile?->role?->name]);
@@ -102,11 +102,11 @@ class UserService
         $isITAdmin = in_array($actorRole, ['IT Admin', 'Super Admin']);
 
         if (!$isITAdmin) {
-            if ($actorDept === 'Finance' && $actorRole === 'Admin') {
-                $financeDept = $this->departmentRepo->findByName('Finance');
+            if ($actorDept === 'Sales & Marketing' && $actorRole === 'Admin') {
+                $financeDept = $this->departmentRepo->findByName('Sales & Marketing');
                 if ($financeDept && $validated['department_id'] != $financeDept->id) {
                     throw new HttpResponseException(
-                        response()->json(['message' => 'You can only create accounts for the Finance department.'], 403)
+                        response()->json(['message' => 'You can only create accounts for the Sales & Marketing department.'], 403)
                     );
                 }
 

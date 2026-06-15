@@ -14,7 +14,9 @@ abstract class TestCase extends BaseTestCase
             \Illuminate\Support\Facades\Artisan::call('passport:client', [
                 '--personal' => true,
                 '--name' => 'Test Personal Access Client',
+                '--no-interaction' => true,
             ]);
         }
     }
 }
+

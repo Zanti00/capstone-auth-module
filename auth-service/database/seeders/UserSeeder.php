@@ -37,25 +37,25 @@ class UserSeeder extends Seeder
                 'department_name' => 'Operations'
             ],
             [
-                'email' => 'finance@example.com',
-                'first_name' => 'Finance',
+                'email' => 'sales-marketing-officer@example.com',
+                'first_name' => 'Sales Marketing',
                 'last_name' => 'Officer',
                 'role_name' => 'Employee',
-                'department_name' => 'Finance'
+                'department_name' => 'Sales & Marketing'
             ],
             [
-                'email' => 'finance-admin@example.com',
-                'first_name' => 'Finance',
+                'email' => 'sales-marketing-admin@example.com',
+                'first_name' => 'Sales Marketing',
                 'last_name' => 'Administrator',
                 'role_name' => 'Admin',
-                'department_name' => 'Finance'
+                'department_name' => 'Sales & Marketing'
             ],
             [
-                'email' => 'finance-manager@example.com',
-                'first_name' => 'Finance',
+                'email' => 'sales-marketing-manager@example.com',
+                'first_name' => 'Sales Marketing',
                 'last_name' => 'Manager',
                 'role_name' => 'Manager',
-                'department_name' => 'Finance'
+                'department_name' => 'Sales & Marketing'
             ],
             [
                 'email' => 'employee@example.com',
