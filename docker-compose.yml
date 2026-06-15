@@ -111,6 +111,7 @@ services:
   db:
     image: mysql:8.0
     container_name: mysql-db
+    command: --skip-name-resolve
     ports:
       - "33066:3306"
     environment:

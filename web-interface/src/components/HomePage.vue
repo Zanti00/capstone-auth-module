@@ -197,6 +197,8 @@ const openModule = (subsystemTitle: string) => {
       }
     } else if (subsystemTitle === 'User & Access Management') {
     router.push('/admin')
+  } else if (subsystemTitle === 'Ticketing System') {
+      window.location.href = '/ticketing/'
   } else {
     alert(`${subsystemTitle} is not active in this development environment.`)
   }
