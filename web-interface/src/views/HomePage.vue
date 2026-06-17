@@ -67,7 +67,7 @@
               {{ sys.desc }}
             </p>
 
-            <div class="pt-4 border-t border-outline-variant/30">
+            <div class="pt-4 border-t border-outline-variant/30 flex justify-end">
               <button 
                 @click="openModule(sys.title)"
                 class="w-full sm:w-auto flex items-center justify-center space-x-2 bg-primary text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-dark transition-all active:scale-95 shadow-sm hover:shadow-md hover:shadow-primary/20 group/btn tracking-wide uppercase text-xs"
