@@ -219,7 +219,7 @@ const subsystems = computed(() => {
 
 const handleLogout = async () => {
   await logout()
-  router.push('/')
+  router.push({ name: 'login', query: { message: 'Successfully logged out.' } })
 }
 
 const openModule = (subsystemTitle: string) => {

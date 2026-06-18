@@ -55,7 +55,6 @@ export function useAuth() {
       // Proceed with local cleanup even if the server call fails
     } finally {
       localStorage.removeItem('user')
-      window.location.href = '/'
     }
   }
 

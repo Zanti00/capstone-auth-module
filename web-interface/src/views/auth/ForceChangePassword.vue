@@ -104,6 +104,7 @@ const handleSubmit = async () => {
 
 const handleLogout = async () => {
   await logout()
+  router.push({ name: 'login', query: { message: 'Successfully logged out.' } })
 }
 </script>
 
