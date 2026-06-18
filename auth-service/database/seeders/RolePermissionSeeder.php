@@ -23,6 +23,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Sales',               'description' => 'Sales staff access'],
             ['name' => 'Supervisor',          'description' => 'Department supervisor access'],
             ['name' => 'Finance',             'description' => 'Finance staff access'],
+            ['name' => 'Accountant',          'description' => 'Accounting staff access'],
             ['name' => 'Employee',            'description' => 'Regular staff access'],
         ];
 
@@ -207,7 +208,7 @@ class RolePermissionSeeder extends Seeder
             $role->permissions()->syncWithoutDetaching($prsValidationPerms->pluck('id'));
         }
 
-        foreach (\App\Models\Role::whereIn('name', ['Sales', 'Employee', 'Finance', 'Finance Employee'])->get() as $role) {
+        foreach (\App\Models\Role::whereIn('name', ['Sales', 'Employee', 'Finance', 'Finance Employee', 'Accountant'])->get() as $role) {
             $role->permissions()->syncWithoutDetaching($prsBasicPerms->pluck('id'));
         }
 

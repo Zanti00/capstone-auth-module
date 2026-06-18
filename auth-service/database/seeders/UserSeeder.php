@@ -43,7 +43,7 @@ class UserSeeder extends Seeder
             ['Carlo', null, 'Mendoza', 'sales.employee3@sbsi.com', 'Sales & Marketing', 'Employee'],
             ['Lara', null, 'Aquino', 'sales.employee4@sbsi.com', 'Sales & Marketing', 'Employee'],
             ['Nico', null, 'Ramos', 'sales.employee5@sbsi.com', 'Sales & Marketing', 'Employee'],
-            ['Hannah', null, 'Flores', 'employee.accounting@sbsi.com', 'Accounting', 'Employee'],
+            ['Hannah', null, 'Flores', 'employee.accounting@sbsi.com', 'Accounting', 'Accountant'],
             ['Victor', null, 'Ocampo', 'employee.admin@sbsi.com', 'Admin', 'Employee'],
             ['Sofia', null, 'Bautista', 'employee.executive@sbsi.com', 'Executive', 'Employee'],
             ['Gabriel', null, 'Pascual', 'employee.finance@sbsi.com', 'Finance', 'Employee'],
