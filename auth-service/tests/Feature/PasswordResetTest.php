@@ -52,6 +52,19 @@ class PasswordResetTest extends TestCase
         });
     }
 
+    public function test_password_reset_mail_uses_frontend_reset_route_with_query_token()
+    {
+        config(['app.frontend_url' => 'http://localhost:5173']);
+
+        $token = 'sample-reset-token';
+        $mail = new PasswordResetMail($token);
+
+        $this->assertSame(
+            'http://localhost:5173/reset-password?token=sample-reset-token',
+            $mail->url
+        );
+    }
+
     public function test_forgot_password_rate_limiting()
     {
         for ($i = 0; $i < 3; $i++) {
