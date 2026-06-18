@@ -90,7 +90,7 @@ class AuthService
             $userAgent
         );
 
-        if ($user->profile?->department?->name === 'Finance') {
+        if ($user->profile?->department?->name === 'Sales & Marketing') {
             $this->internalAuditService->pushEvent(
                 'Login Success',
                 'Session',
@@ -220,7 +220,7 @@ class AuthService
             );
 
             $user->loadMissing(['profile.department', 'profile.role']);
-            if ($user->profile?->department?->name === 'Finance') {
+            if ($user->profile?->department?->name === 'Sales & Marketing') {
                 $this->internalAuditService->pushEvent(
                     'Logout',
                     'Session',
@@ -380,9 +380,12 @@ class AuthService
             false
         );
 
-        $this->userRepo->update($user->id, [
-            'is_password_changed' => true,
-        ]);
+        $updates = ['is_password_changed' => true];
+        if (!$user->is_active) {
+            $updates['is_active'] = true;
+        }
+
+        $this->userRepo->update($user->id, $updates);
 
         $this->auditLogRepo->log(
             $user->id,

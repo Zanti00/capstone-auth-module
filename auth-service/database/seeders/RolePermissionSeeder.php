@@ -155,22 +155,22 @@ class RolePermissionSeeder extends Seeder
             $cmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
         }
 
-        // 3b. Finance Manager ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â same default access as CRMS Manager, but scoped to Finance department
+        // 3b. Finance Manager — same default access as CMS Manager, but scoped to Finance department
         $financeManager = \App\Models\Role::where('name', 'Finance Manager')->first();
         if ($financeManager) {
             $managerPerms = \App\Models\Permission::whereIn('slug', [
-                'crms.templates.use',
-                'crms.ocr.upload',
-                'crms.ocr.process',
-                'crms.ocr.review',
-                'crms.contracts.generate',
-                'crms.risk.assess',
-                'crms.risk.view',
-                'crms.risk.approve',
+                'cms.templates.use',
+                'cms.ocr.upload',
+                'cms.ocr.process',
+                'cms.ocr.review',
+                'cms.contracts.generate',
+                'cms.risk.assess',
+                'cms.risk.view',
+                'cms.risk.approve',
                 // CRUD
-                'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.approve',
-                'crms.users.view',
-                'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
+                'cms.contracts.view', 'cms.contracts.create', 'cms.contracts.edit', 'cms.contracts.approve',
+                'cms.users.view',
+                'cms.partners.view',  'cms.partners.create',  'cms.partners.edit',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
                 'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submission.validate',
                 'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.settings.users.manage',
@@ -233,4 +233,3 @@ class RolePermissionSeeder extends Seeder
         }
     }
 }
-

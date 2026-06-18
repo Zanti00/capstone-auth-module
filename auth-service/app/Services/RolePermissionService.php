@@ -46,7 +46,7 @@ class RolePermissionService
             });
 
             if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-                if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
+                if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
                     $allowed = ['Manager', 'Employee'];
                     $roles = array_filter($roles, function($r) use ($allowed) {
                         return in_array($r['name'], $allowed);
@@ -75,7 +75,7 @@ class RolePermissionService
         }
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
                 $allowed = ['Manager', 'Employee'];
                 $roles = array_filter($roles, function($r) use ($allowed) {
                     return in_array($r['name'], $allowed);
@@ -94,7 +94,7 @@ class RolePermissionService
         $allowedNames = null;
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
                 $allowedNames = ['Manager', 'Employee'];
             } else {
                 // Return empty paginator
@@ -236,7 +236,7 @@ class RolePermissionService
             );
         }
 
-        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
+        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
             return User::whereHas('profile', function ($query) use ($roleId, $actor) {
                 $query->where('role_id', $roleId)
                       ->where('department_id', $actor->profile->department_id);
@@ -264,10 +264,10 @@ class RolePermissionService
             );
         }
 
-        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
+        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
             if ($user->profile?->department_id != $actor->profile->department_id) {
                 throw new HttpResponseException(
-                    response()->json(['message' => 'You can only assign roles to users in the Finance department.'], 403)
+                    response()->json(['message' => 'You can only assign roles to users in the Sales & Marketing department.'], 403)
                 );
             }
         }
@@ -479,7 +479,7 @@ class RolePermissionService
         $roles = $this->permissionRepo->getRoles($permissionId);
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
+            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
                 $allowedNames = ['Manager', 'Employee'];
                 $roles = $roles->filter(function($role) use ($allowedNames) {
                     return in_array($role->name, $allowedNames);
@@ -500,7 +500,7 @@ class RolePermissionService
         }
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
+            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
                 // Get roles currently associated with the permission
                 $currentRoleIds = $permission->roles()->pluck('roles.id')->toArray();
 
@@ -590,7 +590,7 @@ class RolePermissionService
             return true;
         }
 
-        if ($actorRole === 'Admin' && $actorDept === 'Finance') {
+        if ($actorRole === 'Admin' && $actorDept === 'Sales & Marketing') {
             $roleName = $role instanceof Role ? $role->name : $this->roleRepo->findById($role)?->name;
             return in_array($roleName, ['Manager', 'Employee']);
         }

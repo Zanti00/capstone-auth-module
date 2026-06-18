@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
-class FinanceAdminRolePermissionTest extends TestCase
+class SalesMarketingAdminRolePermissionTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -26,9 +26,9 @@ class FinanceAdminRolePermissionTest extends TestCase
         \Illuminate\Support\Facades\Mail::fake();
     }
 
-    private function getFinanceAdminUserWithSession()
+    private function getSalesMarketingAdminUserWithSession()
     {
-        $user = User::where('email', 'finance-admin@example.com')->first();
+        $user = User::where('email', 'sales-marketing-admin@example.com')->first();
         $user->is_password_changed = true;
         $user->save();
         
@@ -66,9 +66,9 @@ class FinanceAdminRolePermissionTest extends TestCase
         return [$user, $sessionId];
     }
 
-    public function test_finance_admin_can_only_list_finance_roles()
+    public function test_sales_marketing_admin_can_only_list_sales_marketing_roles()
     {
-        [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
+        [$user, $sessionId] = $this->getSalesMarketingAdminUserWithSession();
 
         $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
@@ -90,9 +90,9 @@ class FinanceAdminRolePermissionTest extends TestCase
         $this->assertNotContains('Finance', $roleNames);
     }
 
-    public function test_finance_admin_cannot_create_update_delete_roles()
+    public function test_sales_marketing_admin_cannot_create_update_delete_roles()
     {
-        [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
+        [$user, $sessionId] = $this->getSalesMarketingAdminUserWithSession();
         $managerRole = Role::where('name', 'Manager')->first();
 
         // Create -> forbidden
@@ -101,7 +101,7 @@ class FinanceAdminRolePermissionTest extends TestCase
                                ->postJson('/api/admin/roles', [
                                    'name' => 'Should Fail Role',
                                    'description' => 'Will fail'
-                               ]);
+                                ]);
         $responseCreate->assertStatus(403);
 
         // Update -> forbidden
@@ -120,9 +120,9 @@ class FinanceAdminRolePermissionTest extends TestCase
         $responseDelete->assertStatus(403);
     }
 
-    public function test_finance_admin_can_view_finance_role_permissions_and_sync()
+    public function test_sales_marketing_admin_can_view_sales_marketing_role_permissions_and_sync()
     {
-        [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
+        [$user, $sessionId] = $this->getSalesMarketingAdminUserWithSession();
         $managerRole = Role::where('name', 'Manager')->first();
         $itAdminRole = Role::where('name', 'IT Admin')->first();
 
@@ -156,21 +156,21 @@ class FinanceAdminRolePermissionTest extends TestCase
         $responseSyncDisallowed->assertStatus(403);
     }
 
-    public function test_finance_admin_can_only_see_finance_users_for_finance_roles()
+    public function test_sales_marketing_admin_can_only_see_sales_marketing_users_for_sales_marketing_roles()
     {
-        [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
+        [$user, $sessionId] = $this->getSalesMarketingAdminUserWithSession();
         $managerRole = Role::where('name', 'Manager')->first();
         
-        $financeDept = Department::where('name', 'Finance')->first();
+        $salesMarketingDept = Department::where('name', 'Sales & Marketing')->first();
         $opsDept = Department::where('name', 'Operations')->first();
 
-        // User in Finance department with Manager role
-        $financeUser = User::create(['email' => 'finance-user-test@example.com', 'is_active' => true]);
+        // User in Sales & Marketing department with Manager role
+        $salesMarketingUser = User::create(['email' => 'sales-marketing-user-test@example.com', 'is_active' => true]);
         UserProfile::create([
-            'user_id' => $financeUser->id,
+            'user_id' => $salesMarketingUser->id,
             'role_id' => $managerRole->id,
-            'department_id' => $financeDept->id,
-            'first_name' => 'Finance',
+            'department_id' => $salesMarketingDept->id,
+            'first_name' => 'Sales Marketing',
             'last_name' => 'User'
         ]);
 
@@ -191,26 +191,26 @@ class FinanceAdminRolePermissionTest extends TestCase
         $response->assertStatus(200);
         
         $emails = collect($response->json()['data'])->pluck('email')->toArray();
-        $this->assertContains('finance-user-test@example.com', $emails);
+        $this->assertContains('sales-marketing-user-test@example.com', $emails);
         $this->assertNotContains('ops-user-test@example.com', $emails);
     }
 
-    public function test_finance_admin_can_only_assign_finance_roles_to_finance_users()
+    public function test_sales_marketing_admin_can_only_assign_sales_marketing_roles_to_sales_marketing_users()
     {
-        [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
+        [$user, $sessionId] = $this->getSalesMarketingAdminUserWithSession();
         $managerRole = Role::where('name', 'Manager')->first();
         $itAdminRole = Role::where('name', 'IT Admin')->first();
 
-        $financeDept = Department::where('name', 'Finance')->first();
+        $salesMarketingDept = Department::where('name', 'Sales & Marketing')->first();
         $opsDept = Department::where('name', 'Operations')->first();
 
-        // User in Finance department
-        $financeUser = User::create(['email' => 'finance-user-assign@sbsi.com', 'is_active' => true]);
+        // User in Sales & Marketing department
+        $salesMarketingUser = User::create(['email' => 'sales-marketing-user-assign@sbsi.com', 'is_active' => true]);
         UserProfile::create([
-            'user_id' => $financeUser->id,
+            'user_id' => $salesMarketingUser->id,
             'role_id' => Role::where('name', 'Employee')->first()->id,
-            'department_id' => $financeDept->id,
-            'first_name' => 'Finance',
+            'department_id' => $salesMarketingDept->id,
+            'first_name' => 'Sales Marketing',
             'last_name' => 'User'
         ]);
 
@@ -224,19 +224,19 @@ class FinanceAdminRolePermissionTest extends TestCase
             'last_name' => 'User'
         ]);
 
-        // 1. Assign allowed role to Finance user -> allowed
+        // 1. Assign allowed role to Sales & Marketing user -> allowed
         $response1 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
-                          ->patchJson("/api/admin/users/{$financeUser->id}/role", [
+                          ->patchJson("/api/admin/users/{$salesMarketingUser->id}/role", [
                               'role_id' => $managerRole->id
                           ]);
         $response1->assertStatus(200);
-        $this->assertEquals($managerRole->id, $financeUser->fresh()->profile->role_id);
+        $this->assertEquals($managerRole->id, $salesMarketingUser->fresh()->profile->role_id);
 
-        // 2. Assign disallowed role to Finance user -> forbidden
+        // 2. Assign disallowed role to Sales & Marketing user -> forbidden
         $response2 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
-                          ->patchJson("/api/admin/users/{$financeUser->id}/role", [
+                          ->patchJson("/api/admin/users/{$salesMarketingUser->id}/role", [
                               'role_id' => $itAdminRole->id
                           ]);
         $response2->assertStatus(403);
@@ -250,12 +250,12 @@ class FinanceAdminRolePermissionTest extends TestCase
         $response3->assertStatus(403);
     }
 
-    public function test_finance_admin_can_view_and_sync_permission_roles_for_finance_roles()
+    public function test_sales_marketing_admin_can_view_and_sync_permission_roles_for_sales_marketing_roles()
     {
-        [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
+        [$user, $sessionId] = $this->getSalesMarketingAdminUserWithSession();
         $permission = Permission::where('slug', 'cms.templates.use')->first();
 
-        // 1. View roles for permission -> only shows Manager and Employee (when requested by Finance Admin)
+        // 1. View roles for permission -> only shows Manager and Employee (when requested by Sales & Marketing Admin)
         $responseView = $this->actingAs($user, 'api')
                              ->withHeader('X-Session-ID', $sessionId)
                              ->getJson("/api/admin/permissions/{$permission->id}/roles");
@@ -292,28 +292,28 @@ class FinanceAdminRolePermissionTest extends TestCase
         $responseSyncDisallowed->assertStatus(403);
     }
 
-    public function test_finance_admin_can_only_create_user_with_finance_roles_and_finance_dept()
+    public function test_sales_marketing_admin_can_only_create_user_with_sales_marketing_roles_and_sales_marketing_dept()
     {
-        [$user, $sessionId] = $this->getFinanceAdminUserWithSession();
+        [$user, $sessionId] = $this->getSalesMarketingAdminUserWithSession();
         $managerRole = Role::where('name', 'Manager')->first();
         $itAdminRole = Role::where('name', 'IT Admin')->first();
         
-        $financeDept = Department::where('name', 'Finance')->first();
+        $salesMarketingDept = Department::where('name', 'Sales & Marketing')->first();
         $opsDept = Department::where('name', 'Operations')->first();
 
-        // 1. Create user with Finance dept & Manager role -> allowed
+        // 1. Create user with Sales & Marketing dept & Manager role -> allowed
         $response1 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->postJson('/api/admin/users', [
-                              'email' => 'new-finance-mgr@sbsi.com',
+                              'email' => 'new-sales-marketing-mgr@sbsi.com',
                               'first_name' => 'New',
                               'last_name' => 'Manager',
                               'role_id' => $managerRole->id,
-                              'department_id' => $financeDept->id,
+                              'department_id' => $salesMarketingDept->id,
                           ]);
         $response1->assertStatus(201);
 
-        // 2. Create user with Finance dept & Disallowed role (IT Admin) -> forbidden
+        // 2. Create user with Sales & Marketing dept & Disallowed role (IT Admin) -> forbidden
         $response2 = $this->actingAs($user, 'api')
                           ->withHeader('X-Session-ID', $sessionId)
                           ->postJson('/api/admin/users', [
@@ -321,7 +321,7 @@ class FinanceAdminRolePermissionTest extends TestCase
                               'first_name' => 'New',
                               'last_name' => 'Manager',
                               'role_id' => $itAdminRole->id,
-                              'department_id' => $financeDept->id,
+                              'department_id' => $salesMarketingDept->id,
                           ]);
         $response2->assertStatus(403);
 
