@@ -80,30 +80,29 @@ class AuthService
         $this->sessionRepo->createRefreshToken($user->id, $refreshTokenHash, $ip, $userAgent);
         $this->sessionRepo->createSession($user->id, $sessionId, $ip, $userAgent);
 
-        // Log success deferred
-        defer(function () use ($user, $ip, $userAgent, $email) {
-            $this->auditLogRepo->log(
-                $user->id,
-                'LOGIN_SUCCESS',
-                'Successful login for email: ' . $email,
-                $ip,
-                $userAgent
-            );
+        // Log login success synchronously — defer() does not fire reliably under
+        // the PHP built-in CLI server (php artisan serve) used in development.
+        $this->auditLogRepo->log(
+            $user->id,
+            'LOGIN_SUCCESS',
+            'Successful login for email: ' . $email,
+            $ip,
+            $userAgent
+        );
 
-            if ($user->profile?->department?->name === 'Finance') {
-                $this->internalAuditService->pushEvent(
-                    'Login Success',
-                    'Session',
-                    $user->id,
-                    [
-                        'email' => $email,
-                        'ip_address' => $ip,
-                        'user_agent' => $userAgent,
-                    ],
-                    $user
-                );
-            }
-        });
+        if ($user->profile?->department?->name === 'Finance') {
+            $this->internalAuditService->pushEvent(
+                'Login Success',
+                'Session',
+                $user->id,
+                [
+                    'email' => $email,
+                    'ip_address' => $ip,
+                    'user_agent' => $userAgent,
+                ],
+                $user
+            );
+        }
 
         $permissions = $user->profile?->role?->permissions()
             ?->where('system', 'crms')
@@ -200,31 +199,6 @@ class AuthService
 
         if ($sessionId) {
             $this->sessionRepo->invalidateSession($sessionId);
-        }
-
-        if ($user && $ip && $userAgent) {
-            $this->auditLogRepo->log(
-                $user->id,
-                'Logout',
-                'User logged out: ' . $user->email,
-                $ip,
-                $userAgent
-            );
-
-            $user->load(['profile.department', 'profile.role']);
-            if ($user->profile?->department?->name === 'Finance') {
-                $this->internalAuditService->pushEvent(
-                    'Logout',
-                    'Session',
-                    $user->id,
-                    [
-                        'email' => $user->email,
-                        'ip_address' => $ip,
-                        'user_agent' => $userAgent,
-                    ],
-                    $user
-                );
-            }
         }
     }
 
@@ -379,6 +353,40 @@ class AuthService
                 'permissions' => $user->profile->role->permissions->pluck('slug')
             ]
         ];
+    }
+
+    public function changePassword(User $user, string $currentPassword, string $newPassword, string $ip, string $userAgent): void
+    {
+        $user->load('credentials');
+        if (!Hash::check($currentPassword, $user->credentials->password_hash)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The provided current password is incorrect.']
+            ]);
+        }
+
+        $this->userRepo->updatePasswordHash(
+            $user->id,
+            Hash::make($newPassword),
+            false
+        );
+
+        $this->auditLogRepo->log(
+            $user->id,
+            'PASSWORD_CHANGED',
+            'User changed password: ' . $user->email,
+            $ip,
+            $userAgent
+        );
+
+        $this->internalAuditService->pushEvent(
+            'password_changed',
+            'User',
+            $user->id,
+            [
+                'email' => $user->email,
+            ],
+            $user
+        );
     }
 
     public function changePassword(User $user, string $currentPassword, string $newPassword, string $ip, string $userAgent): void
