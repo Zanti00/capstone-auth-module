@@ -25,9 +25,11 @@ class LoginTest extends TestCase
             'email' => 'admin@example.com',
             'password' => 'password',
         ]);
+        $response->dump();
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['access_token', 'token_type', 'user'])
+                 ->assertJsonStructure(['user', 'permissions'])
+                 ->assertCookie('access_token')
                  ->assertCookie('refresh_token');
 
         $this->assertDatabaseHas('audit_logs', [

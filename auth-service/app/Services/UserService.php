@@ -56,7 +56,7 @@ class UserService
         ]);
 
         if ($actor && $actor->profile?->role?->name !== 'IT Admin' && $actor->profile?->role?->name !== 'Super Admin') {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
                 $filters['department_limit_id'] = $actor->profile->department_id;
             } else {
                 Log::info('paginateUsers forcing empty', ['actor_role' => $actor?->profile?->role?->name]);
@@ -102,19 +102,19 @@ class UserService
         $isITAdmin = in_array($actorRole, ['IT Admin', 'Super Admin']);
 
         if (!$isITAdmin) {
-            if ($actorDept === 'Finance' && $actorRole === 'Admin') {
-                $financeDept = $this->departmentRepo->findByName('Finance');
+            if ($actorDept === 'Sales & Marketing' && $actorRole === 'Admin') {
+                $financeDept = $this->departmentRepo->findByName('Sales & Marketing');
                 if ($financeDept && $validated['department_id'] != $financeDept->id) {
                     throw new HttpResponseException(
-                        response()->json(['message' => 'You can only create accounts for the Finance department.'], 403)
+                        response()->json(['message' => 'You can only create accounts for the Sales & Marketing department.'], 403)
                     );
                 }
 
-                $allowedRoleNames = ['Finance Manager', 'Finance Employee'];
+                $allowedRoleNames = ['Manager', 'Employee'];
                 $assignedRole = $this->roleRepo->findById($validated['role_id']);
                 if (!$assignedRole || !in_array($assignedRole->name, $allowedRoleNames)) {
                     throw new HttpResponseException(
-                        response()->json(['message' => 'You are only authorized to assign Finance Manager or Finance Employee roles.'], 403)
+                        response()->json(['message' => 'You are only authorized to assign Manager or Employee roles.'], 403)
                     );
                 }
             } else {
@@ -131,11 +131,12 @@ class UserService
 
             $user = $this->userRepo->create([
                 'email' => $validated['email'],
-                'is_active' => true,
+                'is_active' => false,
             ]);
 
             $this->userRepo->createProfile($user->id, [
                 'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
                 'last_name' => $validated['last_name'],
                 'role_id' => $validated['role_id'],
                 'department_id' => $validated['department_id'],
@@ -257,6 +258,7 @@ class UserService
 
         $this->userRepo->updateProfile($user->id, [
             'first_name' => $validatedData['first_name'] ?? $user->profile?->first_name,
+            'middle_name' => $validatedData['middle_name'] ?? $user->profile?->middle_name,
             'last_name' => $validatedData['last_name'] ?? $user->profile?->last_name,
             'phone' => $validatedData['phone'] ?? $user->profile?->phone,
         ]);
@@ -278,6 +280,7 @@ class UserService
             [
                 'email' => $user->email,
                 'first_name' => $user->profile->first_name,
+                'middle_name' => $user->profile->middle_name,
                 'last_name' => $user->profile->last_name,
             ],
             $user
@@ -287,6 +290,7 @@ class UserService
             'id' => $user->id,
             'email' => $user->email,
             'first_name' => $user->profile->first_name ?? '',
+            'middle_name' => $user->profile->middle_name ?? '',
             'last_name' => $user->profile->last_name ?? '',
             'role' => $user->profile->role->name ?? '',
             'department' => $user->profile->department->name ?? '',

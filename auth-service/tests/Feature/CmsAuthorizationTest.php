@@ -1,17 +1,17 @@
 <?php
-
+ 
 namespace Tests\Feature;
-
+ 
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-
-class CrmsAuthorizationTest extends TestCase
+ 
+class CmsAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
-
+ 
     protected function setUp(): void
     {
         parent::setUp();
@@ -19,37 +19,37 @@ class CrmsAuthorizationTest extends TestCase
         $this->seed(\Database\Seeders\DepartmentSeeder::class);
         $this->seed(\Database\Seeders\UserSeeder::class);
     }
-
+ 
     /**
-     * Test that CRMS permissions are correctly seeded and tagged.
+     * Test that CMS permissions are correctly seeded and tagged.
      */
-    public function test_crms_permissions_are_seeded()
+    public function test_cms_permissions_are_seeded()
     {
         $this->assertDatabaseHas('permissions', [
-            'slug' => 'crms.roles.manage',
-            'system' => 'crms'
+            'slug' => 'cms.roles.manage',
+            'system' => 'cms'
         ]);
-
+ 
         $this->assertDatabaseHas('permissions', [
-            'slug' => 'crms.ocr.upload',
-            'system' => 'crms'
+            'slug' => 'cms.ocr.upload',
+            'system' => 'cms'
         ]);
     }
-
+ 
     /**
-     * Test that Admin role has CRMS admin permissions.
+     * Test that Admin role has CMS admin permissions.
      */
-    public function test_admin_has_correct_crms_permissions()
+    public function test_admin_has_correct_cms_permissions()
     {
         $adminRole = Role::where('name', 'Admin')->first();
         
-        $this->assertTrue($adminRole->permissions->contains('slug', 'crms.roles.manage'));
-        $this->assertTrue($adminRole->permissions->contains('slug', 'crms.templates.manage'));
+        $this->assertTrue($adminRole->permissions->contains('slug', 'cms.roles.manage'));
+        $this->assertTrue($adminRole->permissions->contains('slug', 'cms.templates.manage'));
         
         // Admin should have OCR Upload permission in this setup
-        $this->assertTrue($adminRole->permissions->contains('slug', 'crms.ocr.upload'));
+        $this->assertTrue($adminRole->permissions->contains('slug', 'cms.ocr.upload'));
     }
-
+ 
     /**
      * Test that Sales role has the full OCR/Risk suite.
      */
@@ -57,11 +57,11 @@ class CrmsAuthorizationTest extends TestCase
     {
         $salesRole = Role::where('name', 'Sales')->first();
         
-        $this->assertTrue($salesRole->permissions->contains('slug', 'crms.ocr.upload'));
-        $this->assertTrue($salesRole->permissions->contains('slug', 'crms.risk.assess'));
-        $this->assertTrue($salesRole->permissions->contains('slug', 'crms.risk.approve'));
+        $this->assertTrue($salesRole->permissions->contains('slug', 'cms.ocr.upload'));
+        $this->assertTrue($salesRole->permissions->contains('slug', 'cms.risk.assess'));
+        $this->assertTrue($salesRole->permissions->contains('slug', 'cms.risk.approve'));
     }
-
+ 
     /**
      * Test the API endpoint filtering by system.
      */
@@ -81,27 +81,31 @@ class CrmsAuthorizationTest extends TestCase
             'is_active' => true,
             'created_at' => now(),
         ]);
-
-        $response = $this->actingAs($user)
+ 
+        $user->is_password_changed = true;
+        $user->save();
+ 
+        $response = $this->actingAs($user, 'api')
                          ->withHeader('X-Session-ID', $sessionId)
-                         ->getJson('/api/me/permissions?system=crms');
-
+                         ->getJson('/api/me/permissions?system=cms');
+ 
         $response->assertStatus(200)
                  ->assertJsonFragment(['permissions' => [
-                     'crms.templates.use',
-                     'crms.ocr.upload',
-                     'crms.ocr.process',
-                     'crms.ocr.review',
-                     'crms.contracts.generate',
-                     'crms.risk.assess',
-                     'crms.risk.view',
-                     'crms.risk.approve',
-                     'crms.contracts.view',
-                     'crms.users.view',
-                     'crms.partners.view'
+                     'cms.templates.use',
+                     'cms.ocr.upload',
+                     'cms.ocr.process',
+                     'cms.ocr.review',
+                     'cms.contracts.generate',
+                     'cms.risk.assess',
+                     'cms.risk.view',
+                     'cms.risk.approve',
+                     'cms.contracts.view',
+                     'cms.contracts.approve',
+                     'cms.users.view',
+                     'cms.partners.view'
                  ]]);
                  
-        // Ensure auth-service internal permissions are NOT included in CRMS filtered request
+        // Ensure auth-service internal permissions are NOT included in CMS filtered request
         $response->assertJsonMissing(['view-dashboard']);
     }
 }

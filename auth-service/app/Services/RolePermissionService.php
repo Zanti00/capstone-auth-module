@@ -46,8 +46,8 @@ class RolePermissionService
             });
 
             if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-                if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
-                    $allowed = ['Finance Manager', 'Finance Employee'];
+                if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
+                    $allowed = ['Manager', 'Employee'];
                     $roles = array_filter($roles, function($r) use ($allowed) {
                         return in_array($r['name'], $allowed);
                     });
@@ -75,8 +75,8 @@ class RolePermissionService
         }
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
-                $allowed = ['Finance Manager', 'Finance Employee'];
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
+                $allowed = ['Manager', 'Employee'];
                 $roles = array_filter($roles, function($r) use ($allowed) {
                     return in_array($r['name'], $allowed);
                 });
@@ -94,8 +94,8 @@ class RolePermissionService
         $allowedNames = null;
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
-                $allowedNames = ['Finance Manager', 'Finance Employee'];
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
+                $allowedNames = ['Manager', 'Employee'];
             } else {
                 // Return empty paginator
                 return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage);
@@ -120,7 +120,7 @@ class RolePermissionService
 
         $role = $this->roleRepo->create($data);
 
-        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
+        $this->invalidateRoleCaches();
 
         $this->auditLogRepo->log($actor ? $actor->id : null, 'ROLE_CREATED', "Created role: {$role->name}", $ip, $userAgent);
 
@@ -167,7 +167,7 @@ class RolePermissionService
 
         $this->roleRepo->update($id, $data);
 
-        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
+        $this->invalidateRoleCaches();
 
         $role->refresh();
 
@@ -211,7 +211,7 @@ class RolePermissionService
         $roleName = $role->name;
         $this->roleRepo->delete($id);
 
-        try { Cache::forget('roles:list'); } catch (\Exception $e) {}
+        $this->invalidateRoleCaches();
 
         $this->auditLogRepo->log($actor ? $actor->id : null, 'ROLE_DELETED', "Deleted role: {$roleName}", $ip, $userAgent);
 
@@ -236,7 +236,7 @@ class RolePermissionService
             );
         }
 
-        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
+        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
             return User::whereHas('profile', function ($query) use ($roleId, $actor) {
                 $query->where('role_id', $roleId)
                       ->where('department_id', $actor->profile->department_id);
@@ -264,10 +264,10 @@ class RolePermissionService
             );
         }
 
-        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
+        if ($actor && $actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
             if ($user->profile?->department_id != $actor->profile->department_id) {
                 throw new HttpResponseException(
-                    response()->json(['message' => 'You can only assign roles to users in the Finance department.'], 403)
+                    response()->json(['message' => 'You can only assign roles to users in the Sales & Marketing department.'], 403)
                 );
             }
         }
@@ -369,7 +369,7 @@ class RolePermissionService
     public function getUserPermissions(int $userId): array
     {
         try {
-            return Cache::store('database')->remember("permissions:user:{$userId}", 300, function () use ($userId) {
+            return Cache::remember("user_permissions:{$userId}", 86400, function () use ($userId) {
                 return $this->userRepo->getUserPermissions($userId);
             });
         } catch (\Exception $e) {
@@ -479,8 +479,8 @@ class RolePermissionService
         $roles = $this->permissionRepo->getRoles($permissionId);
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
-                $allowedNames = ['Finance Manager', 'Finance Employee'];
+            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
+                $allowedNames = ['Manager', 'Employee'];
                 $roles = $roles->filter(function($role) use ($allowedNames) {
                     return in_array($role->name, $allowedNames);
                 });
@@ -500,12 +500,12 @@ class RolePermissionService
         }
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Finance') {
+            if ($actor->profile?->role?->name === 'Admin' && $actor->profile?->department?->name === 'Sales & Marketing') {
                 // Get roles currently associated with the permission
                 $currentRoleIds = $permission->roles()->pluck('roles.id')->toArray();
 
                 // Allowed roles for Finance Admin
-                $allowedRoles = Role::whereIn('name', ['Finance Manager', 'Finance Employee'])->pluck('id')->toArray();
+                $allowedRoles = Role::whereIn('name', ['Manager', 'Employee'])->pluck('id')->toArray();
 
                 $disallowedRequested = array_diff($roleIds, $allowedRoles);
                 $disallowedCurrent = array_diff($currentRoleIds, $allowedRoles);
@@ -514,7 +514,7 @@ class RolePermissionService
                 sort($disallowedCurrent);
                 if ($disallowedRequested !== $disallowedCurrent) {
                     throw new HttpResponseException(
-                        response()->json(['message' => 'You are only authorized to map permissions to Finance Manager or Finance Employee roles.'], 403)
+                        response()->json(['message' => 'You are only authorized to map permissions to Manager or Employee roles.'], 403)
                     );
                 }
             } else {
@@ -561,9 +561,19 @@ class RolePermissionService
     private function invalidateUserPermissionCache(int $userId): void
     {
         try {
-            Cache::store('database')->forget("permissions:user:{$userId}");
+            Cache::forget("user_permissions:{$userId}");
         } catch (\Exception $e) {
             Log::warning('Failed to invalidate permission cache', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
+    }
+
+    private function invalidateRoleCaches(): void
+    {
+        try {
+            Cache::forget('roles:list');
+            Cache::forget('roles:all');
+        } catch (\Exception $e) {
+            Log::warning('Failed to invalidate role caches', ['error' => $e->getMessage()]);
         }
     }
 
@@ -580,9 +590,9 @@ class RolePermissionService
             return true;
         }
 
-        if ($actorRole === 'Admin' && $actorDept === 'Finance') {
+        if ($actorRole === 'Admin' && $actorDept === 'Sales & Marketing') {
             $roleName = $role instanceof Role ? $role->name : $this->roleRepo->findById($role)?->name;
-            return in_array($roleName, ['Finance Manager', 'Finance Employee']);
+            return in_array($roleName, ['Manager', 'Employee']);
         }
 
         return false;

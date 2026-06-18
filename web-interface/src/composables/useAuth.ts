@@ -27,9 +27,14 @@ export function useAuth() {
     } catch (error: any) {
       if (error.response) {
         if (error.response.status === 422) {
-          loginErrors.value = error.response.data.errors
+          loginErrors.value = error.response.data.errors || {}
+          // Set a friendly general error message from the validation errors
+          const validationMessage = error.response.data.errors?.email?.[0] || 
+                                    error.response.data.errors?.password?.[0] || 
+                                    error.response.data.message;
+          loginGeneralError.value = validationMessage || 'Invalid email or password.';
         } else if (error.response.status === 429) {
-          loginGeneralError.value = error.response.data.message
+          loginGeneralError.value = error.response.data.message || 'Too many attempts. Please try again later.'
         } else {
           loginGeneralError.value = error.response.data.message || 'An error occurred during login.'
         }
@@ -50,6 +55,7 @@ export function useAuth() {
       // Proceed with local cleanup even if the server call fails
     } finally {
       localStorage.removeItem('user')
+      window.location.href = '/'
     }
   }
 
@@ -154,6 +160,41 @@ export function useAuth() {
     }
   }
 
+  // ── Change Password ────────────────────────────────────────────────────────
+  const changePasswordLoading = ref(false)
+  const changePasswordSuccess = ref(false)
+  const changePasswordErrors = ref<Record<string, string[]>>({})
+  const changePasswordGeneralError = ref('')
+
+  const changePassword = async (payload: any) => {
+    changePasswordLoading.value = true
+    changePasswordSuccess.value = false
+    changePasswordErrors.value = {}
+    changePasswordGeneralError.value = ''
+
+    try {
+      await authService.changePassword(payload)
+      changePasswordSuccess.value = true
+      
+      // Update local storage user flag
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        user.is_password_changed = true
+        user.is_active = true
+        localStorage.setItem('user', JSON.stringify(user))
+      }
+    } catch (error: any) {
+      if (error.response?.status === 422) {
+        changePasswordErrors.value = error.response.data.errors
+      } else {
+        changePasswordGeneralError.value = error.response?.data?.message || 'Failed to change password.'
+      }
+    } finally {
+      changePasswordLoading.value = false
+    }
+  }
+
   return {
     // Login
     login,
@@ -182,5 +223,11 @@ export function useAuth() {
     resending,
     resendMessage,
     resendError,
+    // Change Password
+    changePassword,
+    changePasswordLoading,
+    changePasswordSuccess,
+    changePasswordErrors,
+    changePasswordGeneralError,
   }
 }

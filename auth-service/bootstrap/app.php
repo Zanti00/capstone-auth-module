@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'active.session' => \App\Http\Middleware\CheckActiveSession::class,
             'verified' => \App\Http\Middleware\EnsureEmailVerified::class,
+            'decrypt.rsa' => \App\Http\Middleware\DecryptRsaPayload::class,
+            'require.password.change' => \App\Http\Middleware\RequirePasswordChange::class,
         ]);
         $middleware->encryptCookies(except: [
             'access_token',

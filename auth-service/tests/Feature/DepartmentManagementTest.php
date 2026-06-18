@@ -19,6 +19,7 @@ class DepartmentManagementTest extends TestCase
     protected $adminUser;
     protected $regularUser;
     protected $manageDeptsPermission;
+    protected $sessions = [];
 
     protected function setUp(): void
     {
@@ -76,13 +77,16 @@ class DepartmentManagementTest extends TestCase
             'created_at' => now(),
         ]);
         
-        $user->withSessionId = $sessionId;
+        $this->sessions[$user->id] = $sessionId;
     }
 
     protected function actingAsWithSession($user)
     {
-        return $this->actingAs($user)
-                    ->withHeader('X-Session-ID', $user->withSessionId);
+        $user->is_password_changed = true;
+        $user->save();
+
+        return $this->actingAs($user, 'api')
+                    ->withHeader('X-Session-ID', $this->sessions[$user->id] ?? '');
     }
 
     public function test_admin_can_list_departments()
@@ -93,7 +97,7 @@ class DepartmentManagementTest extends TestCase
                          ->getJson('/api/admin/departments');
 
         $response->assertStatus(200)
-                 ->assertJsonCount(1);
+                 ->assertJsonCount(1, 'data');
     }
 
     public function test_non_admin_cannot_list_departments()

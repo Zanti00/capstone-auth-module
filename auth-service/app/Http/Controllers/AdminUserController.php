@@ -47,15 +47,15 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'first_name'      => 'required|string|max:255',
+            'middle_name'     => 'nullable|string|max:255',
             'last_name'       => 'required|string|max:255',
-            'email'           => ['required', 'email', 'unique:users,email', 'regex:/@sbsi\.com$/i'],
+            'email'           => ['required', 'email', 'unique:users,email'],
             'role_id'         => 'required_without:role_name|nullable|exists:roles,id',
             'role_name'       => 'required_without:role_id|nullable|string|exists:roles,name',
             'department_id'   => 'required_without:department_name|nullable|exists:departments,id',
             'department_name' => 'required_without:department_id|nullable|string|exists:departments,name',
         ], [
             'email.unique' => 'An account with this email already exists.',
-            'email.regex'  => 'Email must use the company domain @sbsi.com.',
         ]);
 
         $user = $this->userService->createUser(

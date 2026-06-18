@@ -16,9 +16,9 @@ class CheckActiveSession
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $sessionId = $request->cookie('session_id') ?? $request->header('X-Session-ID');
+        $sessionId = $request->cookie('session_id') ?: $request->header('X-Session-ID');
 
-        if (!$sessionId) {
+        if (empty($sessionId)) {
             \Illuminate\Support\Facades\Log::error('CheckActiveSession: No session ID');
             return response()->json(['message' => 'Unauthenticated or session missing.'], 401);
         }

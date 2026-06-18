@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Laravel\Sanctum\PersonalAccessToken;
 use App\Services\InternalAuditService;
+
 
 class AuthService
 {
@@ -71,7 +71,7 @@ class AuthService
 
         RateLimiter::clear($throttleKey);
 
-        $accessToken = $user->createToken('auth_token')->plainTextToken;
+        $accessToken = $user->createToken('auth_token')->accessToken;
         $refreshTokenPlain = Str::random(128);
         $refreshTokenHash = hash('sha256', $refreshTokenPlain);
         $sessionId = (string) Str::uuid();
@@ -90,7 +90,7 @@ class AuthService
             $userAgent
         );
 
-        if ($user->profile?->department?->name === 'Finance') {
+        if ($user->profile?->department?->name === 'Sales & Marketing') {
             $this->internalAuditService->pushEvent(
                 'Login Success',
                 'Session',
@@ -105,8 +105,9 @@ class AuthService
         }
 
         $permissions = $user->profile?->role?->permissions()
-            ?->where('system', 'crms')
             ?->pluck('slug') ?? collect();
+            
+        \Illuminate\Support\Facades\Cache::put("user_permissions:{$user->id}", $permissions->toArray(), 86400);
 
         $user->unsetRelation('credentials');
 
@@ -155,7 +156,7 @@ class AuthService
             ]);
         }
 
-        $accessToken = $user->createToken('auth_token')->plainTextToken;
+        $accessToken = $user->createToken('auth_token')->accessToken;
 
         return [
             'access_token' => $accessToken,
@@ -171,8 +172,10 @@ class AuthService
             'id' => $user->id,
             'email' => $user->email,
             'is_active' => (bool) $user->is_active,
+            'is_password_changed' => (bool) $user->is_password_changed,
             'profile' => $user->profile ? [
                 'first_name' => $user->profile->first_name,
+                'middle_name' => $user->profile->middle_name,
                 'last_name' => $user->profile->last_name,
                 'phone' => $user->profile->phone,
                 'address' => $user->profile->address,
@@ -193,12 +196,43 @@ class AuthService
             $this->sessionRepo->revokeRefreshToken($tokenHash);
         }
 
-        if ($user && $user->currentAccessToken()) {
-            $user->currentAccessToken()->delete();
+        if ($user && $user->token()) {
+            $tokenId = $user->token()->id;
+            \Illuminate\Support\Facades\Cache::put("jwt_blacklist:{$tokenId}", true, 120 * 60);
+            \Illuminate\Support\Facades\Cache::forget("user_permissions:{$user->id}");
+            $user->token()->revoke();
         }
 
         if ($sessionId) {
             $this->sessionRepo->invalidateSession($sessionId);
+        }
+
+        if ($user) {
+            $ipAddress = $ip ?? request()->ip() ?? '';
+            $ua = $userAgent ?? request()->userAgent() ?? '';
+
+            $this->auditLogRepo->log(
+                $user->id,
+                'Logout',
+                'User logged out: ' . $user->email,
+                $ipAddress,
+                $ua
+            );
+
+            $user->loadMissing(['profile.department', 'profile.role']);
+            if ($user->profile?->department?->name === 'Sales & Marketing') {
+                $this->internalAuditService->pushEvent(
+                    'Logout',
+                    'Session',
+                    $user->id,
+                    [
+                        'email' => $user->email,
+                        'ip_address' => $ipAddress,
+                        'user_agent' => $ua,
+                    ],
+                    $user
+                );
+            }
         }
     }
 
@@ -255,6 +289,10 @@ class AuthService
                 Hash::make($password, ['rounds' => 12]),
                 false
             );
+
+            $this->userRepo->update($user->id, [
+                'is_password_changed' => true,
+            ]);
 
             $this->sessionRepo->usePasswordResetToken($tokenRecord->id);
             $this->sessionRepo->invalidateAllSessions($user->id);
@@ -370,39 +408,12 @@ class AuthService
             false
         );
 
-        $this->auditLogRepo->log(
-            $user->id,
-            'PASSWORD_CHANGED',
-            'User changed password: ' . $user->email,
-            $ip,
-            $userAgent
-        );
-
-        $this->internalAuditService->pushEvent(
-            'password_changed',
-            'User',
-            $user->id,
-            [
-                'email' => $user->email,
-            ],
-            $user
-        );
-    }
-
-    public function changePassword(User $user, string $currentPassword, string $newPassword, string $ip, string $userAgent): void
-    {
-        $user->load('credentials');
-        if (!Hash::check($currentPassword, $user->credentials->password_hash)) {
-            throw ValidationException::withMessages([
-                'current_password' => ['The provided current password is incorrect.']
-            ]);
+        $updates = ['is_password_changed' => true];
+        if (!$user->is_active) {
+            $updates['is_active'] = true;
         }
 
-        $this->userRepo->updatePasswordHash(
-            $user->id,
-            Hash::make($newPassword),
-            false
-        );
+        $this->userRepo->update($user->id, $updates);
 
         $this->auditLogRepo->log(
             $user->id,

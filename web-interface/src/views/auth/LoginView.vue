@@ -3,7 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-vue-next'
 import ForgotPasswordModal from '@/views/auth/ForgotPassword.vue'
 import ToastNotification from '@/components/common/ToastNotification.vue'
 
@@ -62,25 +62,17 @@ const handleLogin = async () => {
   const result = await login(form)
 
   if (result.success && result.user) {
-    const roleName = result.user.profile?.role?.name || result.user.role || ''
-
-    if (['IT Admin', 'Admin', 'Manager', 'Sales', 'Employee', 'Finance Manager', 'Finance Employee', 'Finance', 'Super Admin'].includes(roleName)) {
-      const redirectUri = router.currentRoute.value.query.redirect_uri
-      if (redirectUri) {
-         let url = redirectUri as string
-         const state = router.currentRoute.value.query.state
-         if (state) {
-            url += (url.includes('?') ? '&' : '?') + 'state=' + encodeURIComponent(state as string)
-         }
-         url += (url.includes('?') ? '&' : '?') + 'message=' + encodeURIComponent('Successfully logged in')
-         window.location.href = url
-      } else {
-         router.push('/home')
+    const redirectUri = router.currentRoute.value.query.redirect_uri
+    if (redirectUri) {
+      let url = redirectUri as string
+      const state = router.currentRoute.value.query.state
+      if (state) {
+        url += (url.includes('?') ? '&' : '?') + 'state=' + encodeURIComponent(state as string)
       }
+      url += (url.includes('?') ? '&' : '?') + 'message=' + encodeURIComponent('Successfully logged in')
+      window.location.href = url
     } else {
-      generalError.value = 'Unrecognized role. Please contact IT Support.'
-      localStorage.removeItem('session_id')
-      localStorage.removeItem('user')
+      router.push('/home')
     }
   }
 }
@@ -88,11 +80,17 @@ const handleLogin = async () => {
 
 <template>
   <!-- Two-panel layout -->
-  <div class="login-container">
+  <div class="login-container fade-in">
     <ToastNotification />
 
     <!-- ── LEFT PANEL ── -->
     <div class="left-panel">
+      <!-- Back Button -->
+      <button @click="router.push('/')" class="back-btn group">
+        <ArrowLeft :size="18" class="transition-transform group-hover:-translate-x-1" />
+        Back to Home
+      </button>
+
       <img class="bg-image" src="@/assets/login.png" alt="Login background" />
       <div class="overlay" />
       <div class="left-text">
@@ -106,7 +104,7 @@ const handleLogin = async () => {
       <form class="form-box" @submit.prevent="handleLogin">
 
         <h2 class="title">Welcome Back!</h2>
-        <p class="subtitle">Sign in to the Ticketing Management System</p>
+        <p class="subtitle">Sign in back to SBSI SSO.</p>
 
         <!-- General / field errors -->
         <div v-if="generalError" class="login-error" role="alert">
@@ -190,6 +188,41 @@ const handleLogin = async () => {
   height: 100vh;
   background: #f2f7fb;
   font-family: "Poppins", sans-serif;
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── BACK BUTTON ── */
+.back-btn {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ── LEFT SIDE ── */

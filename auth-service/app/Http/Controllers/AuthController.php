@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Helpers\CookieHelper;
 
 class AuthController extends Controller
 {
@@ -28,6 +29,37 @@ class AuthController extends Controller
         $this->authService = $authService;
         $this->rolePermissionService = $rolePermissionService;
         $this->userService = $userService;
+    }
+
+    public function getEncryptionKey()
+    {
+        $config = [
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ];
+
+        // Create the keypair
+        $res = openssl_pkey_new($config);
+        
+        if (!$res) {
+            return response()->json(['message' => 'Failed to generate encryption key'], 500);
+        }
+
+        // Extract private key
+        openssl_pkey_export($res, $privateKey);
+
+        // Extract public key
+        $publicKey = openssl_pkey_get_details($res)['key'];
+
+        $keyId = (string) Str::uuid();
+
+        // Store private key in cache for 5 minutes
+        \Illuminate\Support\Facades\Cache::put("rsa_key_{$keyId}", $privateKey, now()->addMinutes(5));
+
+        return response()->json([
+            'public_key' => $publicKey,
+            'key_id' => $keyId,
+        ]);
     }
 
     public function login(Request $request)
@@ -55,36 +87,14 @@ class AuthController extends Controller
         return response()->json([
             'user' => $result['user'],
             'permissions' => $result['permissions']
-        ])->cookie(
-            'access_token',
-            $result['access_token'],
-            60 * 24, // 1 day
-            null,
-            null,
-            true, // Secure
-            true, // HttpOnly
-            false,
-            'Strict'
-        )->cookie(
-            'refresh_token',
-            $result['refresh_token'],
-            60 * 24 * 30, // 30 days
-            null,
-            null,
-            true, // Secure
-            true, // HttpOnly
-            false,
-            'Strict'
-        )->cookie(
-            'session_id',
-            $result['session_id'],
-            60 * 24 * 30, // 30 days
-            null,
-            null,
-            true, // Secure
-            true, // HttpOnly
-            false,
-            'Strict'
+        ])->withCookie(
+            CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
+        )->withCookie(
+            CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
+        )->withCookie(
+            CookieHelper::makeAuthCookie('session_id', $result['session_id'], 60 * 24 * 30)
+        )->withCookie(
+            CookieHelper::makeStatusCookie('is_authenticated', 'true', 60 * 24 * 30)
         );
     }
 
@@ -105,26 +115,12 @@ class AuthController extends Controller
 
             return response()->json([
                 'user' => $result['user']
-            ])->cookie(
-                'access_token',
-                $result['access_token'],
-                60 * 24, // 1 day
-                null,
-                null,
-                true,
-                true,
-                false,
-                'Strict'
-            )->cookie(
-                'refresh_token',
-                $result['refresh_token'],
-                60 * 24 * 30,
-                null,
-                null,
-                true,
-                true,
-                false,
-                'Strict'
+            ])->withCookie(
+                CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
+            )->withCookie(
+                CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
+            )->withCookie(
+                CookieHelper::makeStatusCookie('is_authenticated', 'true', 60 * 24 * 30)
             );
         } catch (ValidationException $e) {
             return response()->json(['message' => $e->getMessage()], 401);
@@ -135,14 +131,16 @@ class AuthController extends Controller
     {
         $refreshTokenPlain = $request->cookie('refresh_token');
         $user = $request->user();
-        $sessionId = $request->cookie('session_id') ?? $request->header('X-Session-ID');
+        $sessionId = $request->cookie('session_id') ?: $request->header('X-Session-ID');
 
         $this->authService->logout($refreshTokenPlain, $sessionId, $user, $request->ip(), $request->userAgent());
 
         return response()->json(['message' => 'Successfully logged out.'])
-            ->withoutCookie('access_token')
-            ->withoutCookie('refresh_token')
-            ->withoutCookie('session_id');
+            ->withCookie(CookieHelper::forgetAuthCookie('access_token'))
+            ->withCookie(CookieHelper::forgetAuthCookie('refresh_token'))
+            ->withCookie(CookieHelper::forgetAuthCookie('session_id'))
+            ->withCookie(CookieHelper::forgetAuthCookie('sb-pebzdnartcxnbskjhnhk-auth-token'))
+            ->withCookie(CookieHelper::forgetStatusCookie('is_authenticated'));
     }
 
     public function forgotPassword(Request $request)
@@ -204,50 +202,39 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Internal endpoint for other services to verify a token.
-     */
-    public function verifyToken(Request $request)
+
+    public function verifyPassword(Request $request)
     {
-        $request->validate(['token' => 'required|string']);
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
 
-        // Sanctum uses | to separate ID from token
-        $token = $request->token;
-        $token = urldecode($token); // In case it's still URL encoded
+        $user = $request->user();
+        $user->load('credentials');
 
-        // If the token is an encrypted cookie, decrypt it first
-        try {
-            // Check if it looks like a Laravel encrypted payload (base64 of JSON)
-            if (str_starts_with($token, 'eyJ') || !str_contains($token, '|')) {
-                $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($token);
-                // The decrypted cookie value might have the | character
-                if (str_contains($decrypted, '|')) {
-                    $token = $decrypted;
-                }
-            }
-        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // It wasn't encrypted or couldn't be decrypted, proceed with original
+        if (Hash::check($request->password, $user->credentials->password_hash)) {
+            return response()->json(['valid' => true, 'message' => 'Password verified.']);
         }
 
-        if (str_contains($token, '|')) {
-            $token = explode('|', $token)[1];
-        }
-
-        try {
-            $result = $this->authService->verifyAccessToken($token);
-            return response()->json($result);
-        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
-            return $e->getResponse();
-        }
+        return response()->json(['valid' => false, 'message' => 'Invalid password.'], 400);
     }
 
     public function changePassword(Request $request)
     {
         $request->validate([
-            'current_password' => 'required|string|max:255',
-            'new_password' => 'required|string|min:8|max:255|regex:/[A-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*(),.?":{}|<>]/',
+            'current_password' => ['required', 'string', 'max:255'],
+            'new_password' => [
+                'required',
+                'string',
+                'min:12',
+                'max:255',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[!@#$%^&*(),.?":{}|<>]/',
+            ],
         ], [
             'new_password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
+            'new_password.min' => 'The password must be at least 12 characters.',
         ]);
 
         $this->authService->changePassword(
@@ -269,19 +256,21 @@ class AuthController extends Controller
             'email' => trim($request->input('email', '')),
             'first_name' => trim($request->input('first_name', '')),
             'last_name' => trim($request->input('last_name', '')),
+            'middle_name' => $request->has('middle_name') ? trim($request->input('middle_name', '')) : null,
             'phone' => trim($request->input('phone', '')),
         ]);
 
         $request->validate([
             'first_name' => 'required|string|max:50',
             'last_name' => 'required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
             'phone' => 'required|string|max:20',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
         ]);
 
         $updatedUser = $this->userService->updateProfile(
             $request->user(),
-            $request->only(['email', 'first_name', 'last_name', 'phone']),
+            $request->only(['email', 'first_name', 'last_name', 'middle_name', 'phone']),
             $request->ip(),
             $request->userAgent()
         );

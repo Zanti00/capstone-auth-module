@@ -37,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\AuditLogRepositoryInterface::class,
             \App\Repositories\Eloquent\AuditLogRepository::class
         );
+        $this->app->bind(
+            \Laravel\Passport\Bridge\AccessTokenRepository::class,
+            \App\Passport\AccessTokenRepository::class
+        );
     }
 
     /**
