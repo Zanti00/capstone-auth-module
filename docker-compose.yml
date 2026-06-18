@@ -1,11 +1,9 @@
-﻿services:
+services:
   auth-service:
     build:
       context: ./auth-service
       dockerfile: Dockerfile
     container_name: auth-service
-    ports:
-      - "8000:8000"
     volumes:
       - ./auth-service:/var/www/html
       - auth-service-vendor:/var/www/html/vendor
