@@ -20,7 +20,9 @@ class DecryptRsaPayload
         $keyId = $request->header('X-Key-Id');
 
         if (!$keyId) {
-            if (app()->environment('testing')) {
+            // app()->environment('testing') reads from $_SERVER which has the Docker OS env APP_ENV=local.
+            // PHPUnit's <env force="true"> only sets $_ENV, so we check $_ENV directly.
+            if (app()->environment('testing') || ($_ENV['APP_ENV'] ?? null) === 'testing') {
                 return $next($request);
             }
             return response()->json(['message' => 'Missing X-Key-Id header for encryption.'], 400);
