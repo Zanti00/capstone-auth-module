@@ -1,4 +1,4 @@
-services:
+﻿services:
   auth-service:
     build:
       context: ./auth-service
@@ -16,8 +16,8 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=root
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=${REDIS_HOST}
       - PHP_CLI_SERVER_WORKERS=4
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET}
@@ -55,8 +55,8 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE}
-      - DB_USERNAME=root
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=${REDIS_HOST}
       - SKIP_MIGRATIONS=true
       - MAIL_MAILER=${MAIL_MAILER}
@@ -150,3 +150,4 @@ volumes:
   web-interface-node-modules:
   mysql-data:
   auth-redis-data:
+

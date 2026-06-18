@@ -21,6 +21,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Admin',               'description' => 'General administration'],
             ['name' => 'Manager',             'description' => 'Management of specific department'],
             ['name' => 'Sales',               'description' => 'Sales staff access'],
+            ['name' => 'Supervisor',          'description' => 'Department supervisor access'],
             ['name' => 'Finance',             'description' => 'Finance staff access'],
             ['name' => 'Employee',            'description' => 'Regular staff access'],
         ];
@@ -49,20 +50,20 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'View Risk Highlights', 'slug' => 'cms.risk.view',            'system' => 'cms'],
             ['name' => 'Approve/Override Risk','slug' => 'cms.risk.approve',         'system' => 'cms'],
 
-            // CMS CRUD Permissions — Contracts (maps to "Contracts" UI category)
+            // CMS CRUD Permissions ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Contracts (maps to "Contracts" UI category)
             ['name' => 'View Contracts',   'slug' => 'cms.contracts.view',   'system' => 'cms'],
             ['name' => 'Create Contracts', 'slug' => 'cms.contracts.create', 'system' => 'cms'],
             ['name' => 'Edit Contracts',   'slug' => 'cms.contracts.edit',   'system' => 'cms'],
             ['name' => 'Delete Contracts', 'slug' => 'cms.contracts.delete', 'system' => 'cms'],
             ['name' => 'Approve Contracts', 'slug' => 'cms.contracts.approve', 'system' => 'cms'],
 
-            // CMS CRUD Permissions — User Management (maps to "User Management" UI category)
+            // CMS CRUD Permissions ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â User Management (maps to "User Management" UI category)
             ['name' => 'View Users',   'slug' => 'cms.users.view',   'system' => 'cms'],
             ['name' => 'Create Users', 'slug' => 'cms.users.create', 'system' => 'cms'],
             ['name' => 'Edit Users',   'slug' => 'cms.users.edit',   'system' => 'cms'],
             ['name' => 'Delete Users', 'slug' => 'cms.users.delete', 'system' => 'cms'],
 
-            // CMS CRUD Permissions — Partners (maps to "Business Partners & Suppliers" UI category)
+            // CMS CRUD Permissions ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Partners (maps to "Business Partners & Suppliers" UI category)
             ['name' => 'View Partners',   'slug' => 'cms.partners.view',   'system' => 'cms'],
             ['name' => 'Create Partners', 'slug' => 'cms.partners.create', 'system' => 'cms'],
             ['name' => 'Edit Partners',   'slug' => 'cms.partners.edit',   'system' => 'cms'],
@@ -73,7 +74,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'View PRS Dashboard', 'slug' => 'prs.dashboard.view', 'system' => 'prs'],
             ['name' => 'View PRS Activity Log', 'slug' => 'prs.activity-log.view', 'system' => 'prs'],
             ['name' => 'Create PRS Submissions', 'slug' => 'prs.submissions.create', 'system' => 'prs'],
-            ['name' => 'Validate PRS Submissions', 'slug' => 'prs.submissions.validate', 'system' => 'prs'],
+            ['name' => 'Validate PRS Submissions', 'slug' => 'prs.submission.validate', 'system' => 'prs'],
             ['name' => 'Manage PRS Itineraries', 'slug' => 'prs.itineraries.manage', 'system' => 'prs'],
             ['name' => 'View PRS Leaderboard', 'slug' => 'prs.leaderboard.view', 'system' => 'prs'],
             ['name' => 'View PRS Reports', 'slug' => 'prs.reports.view', 'system' => 'prs'],
@@ -90,21 +91,21 @@ class RolePermissionSeeder extends Seeder
 
         foreach ($permissions as $permission) {
             \App\Models\Permission::updateOrCreate(
-                ['slug' => $permission['slug']],
+                ['name' => $permission['name']],
                 $permission
             );
         }
 
         // --- Role Assignment Logic ---
 
-        // 1. IT Admin / Super Admin — full auth management
+        // 1. IT Admin / Super Admin ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â full auth management
         $authAdminRoles = \App\Models\Role::whereIn('name', ['Super Admin', 'IT Admin'])->get();
         $authPermissions = \App\Models\Permission::where('system', 'auth')->get();
         foreach ($authAdminRoles as $role) {
             $role->permissions()->syncWithoutDetaching($authPermissions->pluck('id'));
         }
 
-        // 2. CMS Admin — full access to everything
+        // 2. CMS Admin ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â full access to everything
         $cmsAdmin = \App\Models\Role::where('name', 'Admin')->first();
         if ($cmsAdmin) {
             $adminPerms = \App\Models\Permission::whereIn('slug', [
@@ -124,14 +125,14 @@ class RolePermissionSeeder extends Seeder
                 'cms.partners.view',  'cms.partners.create',  'cms.partners.edit',  'cms.partners.delete',
                 'manage-users',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
-                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
+                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submission.validate',
                 'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.settings.users.manage',
                 'prs.settings.departments.manage', 'prs.settings.products.manage', 'prs.settings.institutions.manage', 'prs.files.view',
             ])->get();
             $cmsAdmin->permissions()->syncWithoutDetaching($adminPerms->pluck('id'));
         }
 
-        // 3. CMS Manager — broad access, cannot delete users or manage roles
+        // 3. CMS Manager ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â broad access, cannot delete users or manage roles
         $cmsManager = \App\Models\Role::where('name', 'Manager')->first();
         if ($cmsManager) {
             $managerPerms = \App\Models\Permission::whereIn('slug', [
@@ -148,13 +149,13 @@ class RolePermissionSeeder extends Seeder
                 'cms.users.view',
                 'cms.partners.view',  'cms.partners.create',  'cms.partners.edit',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
-                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
+                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submission.validate',
                 'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.files.view',
             ])->get();
             $cmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
         }
 
-        // 3b. Finance Manager — same default access as CRMS Manager, but scoped to Finance department
+        // 3b. Finance Manager ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â same default access as CRMS Manager, but scoped to Finance department
         $financeManager = \App\Models\Role::where('name', 'Finance Manager')->first();
         if ($financeManager) {
             $managerPerms = \App\Models\Permission::whereIn('slug', [
@@ -171,7 +172,7 @@ class RolePermissionSeeder extends Seeder
                 'crms.users.view',
                 'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
                 'serms.reimbursements.manage', 'serms.liquidations.manage', 'serms.cash_advances.manage',
-                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submissions.validate',
+                'prs.dashboard.view', 'prs.activity-log.view', 'prs.submissions.create', 'prs.submission.validate',
                 'prs.itineraries.manage', 'prs.leaderboard.view', 'prs.reports.view', 'prs.settings.users.manage',
                 'prs.settings.departments.manage', 'prs.settings.products.manage', 'prs.settings.institutions.manage', 'prs.files.view',
             ])->get();
@@ -192,7 +193,7 @@ class RolePermissionSeeder extends Seeder
         $prsValidationPerms = \App\Models\Permission::whereIn('slug', [
             'prs.dashboard.view',
             'prs.activity-log.view',
-            'prs.submissions.validate',
+            'prs.submission.validate',
             'prs.itineraries.manage',
             'prs.leaderboard.view',
             'prs.files.view',
@@ -202,7 +203,7 @@ class RolePermissionSeeder extends Seeder
             $role->permissions()->syncWithoutDetaching($prsAllPerms->pluck('id'));
         }
 
-        foreach (\App\Models\Role::whereIn('name', ['Manager', 'Finance Manager'])->get() as $role) {
+        foreach (\App\Models\Role::whereIn('name', ['Manager', 'Finance Manager', 'Supervisor'])->get() as $role) {
             $role->permissions()->syncWithoutDetaching($prsValidationPerms->pluck('id'));
         }
 
@@ -210,7 +211,7 @@ class RolePermissionSeeder extends Seeder
             $role->permissions()->syncWithoutDetaching($prsBasicPerms->pluck('id'));
         }
 
-        // 4. CMS Sales — limited, view-only on most; own-record access enforced by app logic
+        // 4. CMS Sales ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â limited, view-only on most; own-record access enforced by app logic
         $cmsSales = \App\Models\Role::where('name', 'Sales')->first();
         if ($cmsSales) {
             $salesPerms = \App\Models\Permission::whereIn('slug', [
@@ -232,3 +233,4 @@ class RolePermissionSeeder extends Seeder
         }
     }
 }
+
