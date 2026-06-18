@@ -195,6 +195,8 @@ const openModule = (subsystemTitle: string) => {
         window.location.href = `/cms/auth/callback?state=/cms/manager/dashboard`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
         window.location.href = `/cms/auth/callback?state=/cms/sales/dashboard`
+      } else {
+        window.location.href = `/cms/auth/callback?state=/cms/dashboard`
       }
     } else if (subsystemTitle === 'Smart Expense Reimbursement') {
       if (userRole.value === 'IT Admin') {
@@ -205,6 +207,8 @@ const openModule = (subsystemTitle: string) => {
         window.location.href = `/serms/auth/callback?state=/serms/manager/dashboard&message=Successfully%20logged%20in`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
         window.location.href = `/serms/auth/callback?state=/serms/sales/dashboard&message=Successfully%20logged%20in`
+      } else {
+        window.location.href = `/serms/auth/callback?state=/serms/dashboard&message=Successfully%20logged%20in`
       }
     } else if (subsystemTitle === 'Productivity Report System') {
       window.location.href = '/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in'
