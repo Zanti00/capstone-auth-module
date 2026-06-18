@@ -88,18 +88,25 @@ const handleSubmit = async () => {
     return
   }
 
-  await changePassword(form)
+  const result = await changePassword(form)
   
-  if (isSuccess.value) {
+  if (result?.success && isSuccess.value) {
     addToast({
-      message: 'Password updated successfully. Redirecting...',
+      message: result.message || 'Password updated successfully. Redirecting...',
       type: 'success',
       duration: 2000
     })
     setTimeout(() => {
       router.push('/home')
     }, 2000)
+    return
   }
+
+  addToast({
+    message: result?.message || generalError.value || 'Password update failed.',
+    type: 'error',
+    duration: 4000
+  })
 }
 
 const handleLogout = async () => {

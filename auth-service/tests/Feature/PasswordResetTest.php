@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendTransactionalEmailJob;
+use App\Models\EmailNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\PasswordResetMail;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 use Illuminate\Support\Str;
 
@@ -34,7 +35,7 @@ class PasswordResetTest extends TestCase
 
     public function test_forgot_password_generates_token_and_sends_email()
     {
-        Mail::fake();
+        Queue::fake();
 
         $response = $this->postJson('/api/forgot-password', [
             'email' => 'admin@example.com'
@@ -46,22 +47,35 @@ class PasswordResetTest extends TestCase
         $user = User::where('email', 'admin@example.com')->first();
         
         $this->assertDatabaseCount('password_reset_tokens', 1);
-
-        Mail::assertQueued(PasswordResetMail::class, function ($mail) use ($user) {
-            return $mail->hasTo($user->email);
-        });
+        $this->assertDatabaseHas('email_notifications', [
+            'user_id' => $user->id,
+            'notification_type' => 'password_reset',
+            'recipient_email' => $user->email,
+            'template_key' => 'password_reset',
+            'status' => 'pending',
+        ]);
+        Queue::assertPushed(SendTransactionalEmailJob::class);
     }
 
-    public function test_password_reset_mail_uses_frontend_reset_route_with_query_token()
+    public function test_password_reset_notification_payload_uses_frontend_reset_route_with_query_token()
     {
+        Queue::fake();
         config(['app.frontend_url' => 'http://localhost:5173']);
+        $user = User::where('email', 'admin@example.com')->first();
 
-        $token = 'sample-reset-token';
-        $mail = new PasswordResetMail($token);
+        $this->postJson('/api/forgot-password', [
+            'email' => 'admin@example.com'
+        ])->assertStatus(200);
 
-        $this->assertSame(
-            'http://localhost:5173/reset-password?token=sample-reset-token',
-            $mail->url
+        $notification = EmailNotification::where('user_id', $user->id)
+            ->where('notification_type', 'password_reset')
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($notification);
+        $this->assertStringStartsWith(
+            'http://localhost:5173/reset-password?token=',
+            $notification->payload['reset_url']
         );
     }
 
@@ -139,6 +153,34 @@ class PasswordResetTest extends TestCase
             'user_id' => $user->id,
             'is_revoked' => false
         ]);
+    }
+
+    public function test_reset_password_creates_credentials_when_missing()
+    {
+        $user = User::where('email', 'admin@example.com')->first();
+        DB::table('user_credentials')->where('user_id', $user->id)->delete();
+
+        $tokenPlain = Str::random(64);
+
+        DB::table('password_reset_tokens')->insert([
+            'user_id' => $user->id,
+            'token_hash' => hash('sha256', $tokenPlain),
+            'expires_at' => now()->addMinutes(15),
+            'created_at' => now()
+        ]);
+
+        $response = $this->postJson('/api/reset-password', [
+            'token' => $tokenPlain,
+            'password' => 'BrandNewPass123!@#'
+        ]);
+
+        $response->assertStatus(200);
+
+        $credentials = DB::table('user_credentials')->where('user_id', $user->id)->first();
+        $this->assertNotNull($credentials);
+        $this->assertEquals(0, $credentials->must_change_password);
+        $this->assertNotNull($credentials->password_changed_at);
+        $this->assertTrue(Hash::check('BrandNewPass123!@#', $credentials->password_hash));
     }
 
     public function test_reset_password_fails_with_expired_token()

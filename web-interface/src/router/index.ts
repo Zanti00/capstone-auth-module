@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import LandingPage from "../views/LandingPage.vue";
 import LoginView from "../views/auth/LoginView.vue";
+import { clearClientAuthState, isAuthenticatedClientSide } from "@/utils/authState";
 
 const routes = [
   {
@@ -32,12 +33,6 @@ const routes = [
     path: "/verify-email",
     name: "verify-email",
     component: () => import("../views/auth/EmailVerification.vue"),
-  },
-  {
-    path: "/force-change-password",
-    name: "force-change-password",
-    component: () => import("../views/auth/ForceChangePassword.vue"),
-    meta: { requiresAuth: true },
   },
   {
     path: "/force-change-password",
@@ -96,7 +91,7 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
-  const isAuthenticated = !!user;
+  const isAuthenticated = isAuthenticatedClientSide();
 
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
   const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin);
@@ -128,8 +123,7 @@ router.beforeEach((to, _from, next) => {
     alert(
       "Access Denied: Only IT Admin can access the authentication module interface.",
     );
-    localStorage.removeItem("session_id");
-    localStorage.removeItem("user");
+    clearClientAuthState();
     next({ name: "login" });
   } else {
     next();

@@ -82,20 +82,33 @@ class AuthController extends Controller
             $request->userAgent()
         );
 
-        $user = $result['user_model'];
-
-        return response()->json([
+        $response = response()->json([
             'user' => $result['user'],
-            'permissions' => $result['permissions']
+            'permissions' => $result['permissions'],
+            'password_change_required' => $result['password_change_required'],
         ])->withCookie(
-            CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
-        )->withCookie(
-            CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
-        )->withCookie(
             CookieHelper::makeAuthCookie('session_id', $result['session_id'], 60 * 24 * 30)
         )->withCookie(
             CookieHelper::makeStatusCookie('is_authenticated', 'true', 60 * 24 * 30)
         );
+
+        if ($result['access_token']) {
+            $response->withCookie(
+                CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
+            );
+        } else {
+            $response->withCookie(CookieHelper::forgetAuthCookie('access_token'));
+        }
+
+        if ($result['refresh_token']) {
+            $response->withCookie(
+                CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
+            );
+        } else {
+            $response->withCookie(CookieHelper::forgetAuthCookie('refresh_token'));
+        }
+
+        return $response;
     }
 
     public function refresh(Request $request)

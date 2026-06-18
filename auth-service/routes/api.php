@@ -1,15 +1,19 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BrevoWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/encryption-key', [AuthController::class, 'getEncryptionKey']);
+Route::post('/webhooks/brevo', BrevoWebhookController::class);
 Route::post('/login', [AuthController::class, 'login'])->middleware(['throttle:auth', 'decrypt.rsa:password']);
 Route::post('/refresh', [AuthController::class, 'refresh']);
+Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:auth', 'decrypt.rsa:password,password_confirmation']);
 Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/me/password', [AuthController::class, 'changePassword'])->middleware(['password.change.session', 'active.session', 'decrypt.rsa:current_password,new_password,new_password_confirmation']);
 
 Route::get('/internal/audit-logs', [\App\Http\Controllers\InternalAuditLogController::class, 'index']);
 Route::post('/internal/verify-token', \App\Http\Controllers\InternalVerifyTokenController::class);
@@ -19,9 +23,6 @@ Route::get('/internal/users-batch', [\App\Http\Controllers\InternalUserControlle
 
 Route::middleware(['auth:api', 'active.session'])->group(function () {
     // Routes that must be accessible even if password change is required
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/me/password', [AuthController::class, 'changePassword'])->middleware('decrypt.rsa:current_password,new_password,new_password_confirmation');
-
     // Routes that require password change
     Route::middleware('require.password.change')->group(function () {
         Route::post('/send-verification', [AuthController::class, 'sendVerification']);

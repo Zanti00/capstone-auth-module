@@ -35,11 +35,13 @@ class AuthFlowTest extends TestCase
      */
     public function test_login_success()
     {
+        $this->user->is_password_changed = true;
+        $this->user->save();
+
         $response = $this->postJson('/api/login', [
             'email' => 'test@example.com',
             'password' => 'Password123!',
         ]);
-        $response->dump();
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -48,6 +50,26 @@ class AuthFlowTest extends TestCase
         ]);
         $response->assertCookie('access_token');
         $response->assertCookie('session_id');
+    }
+
+    public function test_first_login_does_not_issue_access_or_refresh_tokens(): void
+    {
+        $this->user->is_password_changed = false;
+        $this->user->is_active = false;
+        $this->user->save();
+
+        $response = $this->postJson('/api/login', [
+            'email' => 'test@example.com',
+            'password' => 'Password123!',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'password_change_required' => true,
+            ])
+            ->assertCookie('session_id')
+            ->assertCookieExpired('access_token')
+            ->assertCookieExpired('refresh_token');
     }
 
     /**
@@ -99,6 +121,9 @@ class AuthFlowTest extends TestCase
      */
     public function test_logout_revokes_token()
     {
+        $this->user->is_password_changed = true;
+        $this->user->save();
+
         // Login first
         $loginResponse = $this->postJson('/api/login', [
             'email' => 'test@example.com',
@@ -123,5 +148,48 @@ class AuthFlowTest extends TestCase
         ])->getJson('/api/user');
 
         $userResponse->assertStatus(401);
+    }
+
+    public function test_logout_clears_cookies_even_without_valid_auth_context()
+    {
+        $response = $this->withCookie('refresh_token', 'stale-refresh-token')
+            ->withCookie('session_id', 'stale-session-id')
+            ->postJson('/api/logout');
+
+        $response->assertStatus(200);
+        $response->assertJson(['message' => 'Successfully logged out.']);
+        $response->assertCookieExpired('access_token');
+        $response->assertCookieExpired('refresh_token');
+        $response->assertCookieExpired('session_id');
+        $response->assertCookieExpired('is_authenticated');
+    }
+
+    public function test_first_login_user_can_change_password_with_session_only(): void
+    {
+        $this->user->is_password_changed = false;
+        $this->user->is_active = false;
+        $this->user->save();
+
+        $loginResponse = $this->postJson('/api/login', [
+            'email' => 'test@example.com',
+            'password' => 'Password123!',
+        ]);
+
+        $sessionId = $loginResponse->getCookie('session_id', false)->getValue();
+
+        $response = $this->withHeader('X-Session-ID', $sessionId)
+            ->postJson('/api/me/password', [
+                'current_password' => 'Password123!',
+                'new_password' => 'UpdatedPassword123!',
+                'new_password_confirmation' => 'UpdatedPassword123!',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['message' => 'Password has been successfully updated.']);
+
+        $this->user->refresh();
+        $this->assertTrue($this->user->is_password_changed);
+        $this->assertEquals(1, $this->user->is_active);
+        $this->assertTrue(Hash::check('UpdatedPassword123!', $this->user->credentials->fresh()->password_hash));
     }
 }

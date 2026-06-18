@@ -2,16 +2,14 @@
 
 namespace App\Services;
 
+use App\Contracts\EmailNotificationServiceInterface;
 use App\Models\User;
-use App\Mail\PasswordResetMail;
-use App\Mail\VerifyEmail;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Contracts\SessionRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -24,17 +22,20 @@ class AuthService
     protected SessionRepositoryInterface $sessionRepo;
     protected AuditLogRepositoryInterface $auditLogRepo;
     protected InternalAuditService $internalAuditService;
+    protected EmailNotificationServiceInterface $emailNotificationService;
 
     public function __construct(
         UserRepositoryInterface $userRepo,
         SessionRepositoryInterface $sessionRepo,
         AuditLogRepositoryInterface $auditLogRepo,
-        InternalAuditService $internalAuditService
+        InternalAuditService $internalAuditService,
+        EmailNotificationServiceInterface $emailNotificationService
     ) {
         $this->userRepo = $userRepo;
         $this->sessionRepo = $sessionRepo;
         $this->auditLogRepo = $auditLogRepo;
         $this->internalAuditService = $internalAuditService;
+        $this->emailNotificationService = $emailNotificationService;
     }
 
     public function attemptLogin(string $email, string $password, string $ip, string $userAgent): array
@@ -71,14 +72,19 @@ class AuthService
 
         RateLimiter::clear($throttleKey);
 
-        $accessToken = $user->createToken('auth_token')->accessToken;
-        $refreshTokenPlain = Str::random(128);
-        $refreshTokenHash = hash('sha256', $refreshTokenPlain);
+        $shouldIssueTokens = (bool) $user->is_password_changed;
+        $accessToken = null;
+        $refreshTokenPlain = null;
         $sessionId = (string) Str::uuid();
 
-        // Write security-critical records synchronously
-        $this->sessionRepo->createRefreshToken($user->id, $refreshTokenHash, $ip, $userAgent);
         $this->sessionRepo->createSession($user->id, $sessionId, $ip, $userAgent);
+
+        if ($shouldIssueTokens) {
+            $accessToken = $user->createToken('auth_token')->accessToken;
+            $refreshTokenPlain = Str::random(128);
+            $refreshTokenHash = hash('sha256', $refreshTokenPlain);
+            $this->sessionRepo->createRefreshToken($user->id, $refreshTokenHash, $ip, $userAgent);
+        }
 
         // Log login success synchronously — defer() does not fire reliably under
         // the PHP built-in CLI server (php artisan serve) used in development.
@@ -115,6 +121,7 @@ class AuthService
             'access_token' => $accessToken,
             'refresh_token' => $refreshTokenPlain,
             'session_id' => $sessionId,
+            'password_change_required' => !$shouldIssueTokens,
             'user' => $this->formatUserForFrontend($user),
             'user_model' => $user,
             'permissions' => $permissions
@@ -260,7 +267,17 @@ class AuthService
 
             $this->sessionRepo->createPasswordResetToken($user->id, $tokenHash);
 
-            Mail::to($user->email)->queue(new PasswordResetMail($tokenPlain));
+            $this->emailNotificationService->queueNotification(
+                'password_reset',
+                $user->email,
+                [
+                    'email' => $user->email,
+                    'reset_url' => rtrim((string) config('app.frontend_url', 'http://localhost:5173'), '/') . '/reset-password?token=' . urlencode($tokenPlain),
+                    'app_name' => config('app.name'),
+                ],
+                $user->id,
+                'Reset Your Password'
+            );
         }
     }
 
@@ -284,11 +301,17 @@ class AuthService
         }
 
         DB::transaction(function () use ($user, $tokenRecord, $password) {
-            $this->userRepo->updatePasswordHash(
+            $updated = $this->userRepo->savePasswordCredentials(
                 $user->id,
                 Hash::make($password, ['rounds' => 12]),
                 false
             );
+
+            if (!$updated) {
+                throw ValidationException::withMessages([
+                    'password' => ['Unable to update password credentials for this account.']
+                ]);
+            }
 
             $this->userRepo->update($user->id, [
                 'is_password_changed' => true,
@@ -327,7 +350,17 @@ class AuthService
         $this->sessionRepo->createEmailVerificationToken($user->id, $tokenHash);
 
         $url = config('app.frontend_url', 'http://localhost:5173') . '/verify-email?token=' . $tokenPlain;
-        Mail::to($user->email)->queue(new VerifyEmail($url));
+        $this->emailNotificationService->queueNotification(
+            'email_verification',
+            $user->email,
+            [
+                'email' => $user->email,
+                'verification_url' => $url,
+                'app_name' => config('app.name'),
+            ],
+            $user->id,
+            'Verify Your Email Address'
+        );
     }
 
     public function verifyEmail(string $tokenPlain): void
@@ -396,17 +429,29 @@ class AuthService
     public function changePassword(User $user, string $currentPassword, string $newPassword, string $ip, string $userAgent): void
     {
         $user->load('credentials');
+        if (!$user->credentials) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Password credentials are missing for this account.']
+            ]);
+        }
+
         if (!Hash::check($currentPassword, $user->credentials->password_hash)) {
             throw ValidationException::withMessages([
                 'current_password' => ['The provided current password is incorrect.']
             ]);
         }
 
-        $this->userRepo->updatePasswordHash(
+        $updated = $this->userRepo->savePasswordCredentials(
             $user->id,
             Hash::make($newPassword),
             false
         );
+
+        if (!$updated) {
+            throw ValidationException::withMessages([
+                'new_password' => ['Unable to update password credentials for this account.']
+            ]);
+        }
 
         $updates = ['is_password_changed' => true];
         if (!$user->is_active) {
@@ -431,6 +476,19 @@ class AuthService
                 'email' => $user->email,
             ],
             $user
+        );
+
+        $this->emailNotificationService->queueNotification(
+            'password_changed_confirmation',
+            $user->email,
+            [
+                'email' => $user->email,
+                'first_name' => $user->profile?->first_name,
+                'app_name' => config('app.name'),
+                'changed_at' => now()->toDateTimeString(),
+            ],
+            $user->id,
+            'Your Password Was Changed'
         );
     }
 }
