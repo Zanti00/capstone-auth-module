@@ -47,7 +47,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           <div 
-            v-for="(sys, i) in subsystems" 
+            v-for="sys in subsystems" 
             :key="sys.title"
             class="glass-card group p-6 rounded-2xl flex flex-col h-full relative overflow-hidden bg-gradient-to-br from-white to-[#fafcff] shadow-md hover:shadow-xl hover:shadow-primary/10 transition-all duration-500"
           >
@@ -143,13 +143,6 @@ const userInitials = computed(() => {
     return name.substring(0, 2).toUpperCase()
   }
   return 'US'
-})
-
-const timeOfDay = computed(() => {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 18) return 'afternoon'
-  return 'evening'
 })
 
 const subsystems = computed(() => {

@@ -3,7 +3,7 @@ import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
 import { Eye, EyeOff, Loader2 } from "lucide-vue-next";
-import ForgotPasswordModal from "@/components/ForgotPassword.vue";
+import ForgotPasswordModal from "@/views/auth/ForgotPassword.vue";
 
 const router = useRouter();
 const {
