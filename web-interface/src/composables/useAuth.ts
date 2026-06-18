@@ -181,6 +181,7 @@ export function useAuth() {
       if (userStr) {
         const user = JSON.parse(userStr)
         user.is_password_changed = true
+        user.is_active = true
         localStorage.setItem('user', JSON.stringify(user))
       }
     } catch (error: any) {

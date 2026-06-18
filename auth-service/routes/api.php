@@ -15,6 +15,7 @@ Route::get('/internal/audit-logs', [\App\Http\Controllers\InternalAuditLogContro
 Route::post('/internal/verify-token', \App\Http\Controllers\InternalVerifyTokenController::class);
 Route::get('/internal/users/{id}', [\App\Http\Controllers\InternalUserController::class, 'show']);
 Route::get('/internal/users-by-roles', [\App\Http\Controllers\InternalUserController::class, 'getUsersByRoles']);
+Route::get('/internal/users-batch', [\App\Http\Controllers\InternalUserController::class, 'getUsersBatch']);
 
 Route::middleware(['auth:api', 'active.session'])->group(function () {
     // Routes that must be accessible even if password change is required

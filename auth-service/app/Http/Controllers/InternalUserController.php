@@ -83,4 +83,37 @@ final class InternalUserController extends Controller
 
         return response()->json(['data' => $data]);
     }
+
+    /**
+     * GET /internal/users-batch
+     */
+    public function getUsersBatch(Request $request): JsonResponse
+    {
+        $forbidden = $this->verifySecret($request);
+        if ($forbidden) {
+            return $forbidden;
+        }
+
+        $idsString = $request->query('ids', '');
+        $idsList = array_filter(array_map('intval', explode(',', $idsString)));
+
+        if (empty($idsList)) {
+            return response()->json(['data' => []]);
+        }
+
+        $users = User::whereIn('id', $idsList)
+            ->with(['profile.role', 'profile.department'])
+            ->get();
+
+        $data = $users->map(fn ($user) => [
+            'id' => $user->id,
+            'email' => $user->email,
+            'first_name' => $user->profile?->first_name ?? '',
+            'last_name' => $user->profile?->last_name ?? '',
+            'role' => $user->profile?->role?->name,
+            'department' => $user->profile?->department?->name,
+        ])->values()->all();
+
+        return response()->json(['data' => $data]);
+    }
 }

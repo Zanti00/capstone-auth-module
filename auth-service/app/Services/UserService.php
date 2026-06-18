@@ -131,7 +131,7 @@ class UserService
 
             $user = $this->userRepo->create([
                 'email' => $validated['email'],
-                'is_active' => true,
+                'is_active' => false,
             ]);
 
             $this->userRepo->createProfile($user->id, [

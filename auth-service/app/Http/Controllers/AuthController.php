@@ -226,7 +226,7 @@ class AuthController extends Controller
             'new_password' => [
                 'required',
                 'string',
-                'min:8',
+                'min:12',
                 'max:255',
                 'regex:/[A-Z]/',
                 'regex:/[0-9]/',
@@ -234,6 +234,7 @@ class AuthController extends Controller
             ],
         ], [
             'new_password.regex' => 'The password must contain at least one uppercase letter, one number, and one special character.',
+            'new_password.min' => 'The password must be at least 12 characters.',
         ]);
 
         $this->authService->changePassword(

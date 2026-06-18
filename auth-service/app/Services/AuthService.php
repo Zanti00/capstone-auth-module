@@ -380,9 +380,12 @@ class AuthService
             false
         );
 
-        $this->userRepo->update($user->id, [
-            'is_password_changed' => true,
-        ]);
+        $updates = ['is_password_changed' => true];
+        if (!$user->is_active) {
+            $updates['is_active'] = true;
+        }
+
+        $this->userRepo->update($user->id, $updates);
 
         $this->auditLogRepo->log(
             $user->id,
