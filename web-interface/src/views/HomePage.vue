@@ -216,32 +216,36 @@ const handleLogout = async () => {
 }
 
 const openModule = (subsystemTitle: string) => {
+    const cmsUrl = import.meta.env.VITE_CMS_URL || ''
+    const sermsUrl = import.meta.env.VITE_SERMS_URL || ''
+    const prsUrl = import.meta.env.VITE_PRS_URL || ''
+
     if (subsystemTitle === 'Contract Management') {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
       } else if (userRole.value === 'Admin') {
-        window.location.href = `/cms/auth/callback?state=/cms/admin/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/admin/dashboard`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
-        window.location.href = `/cms/auth/callback?state=/cms/manager/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/manager/dashboard`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
-        window.location.href = `/cms/auth/callback?state=/cms/sales/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/sales/dashboard`
       } else {
-        window.location.href = `/cms/auth/callback?state=/cms/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/dashboard`
       }
     } else if (subsystemTitle === 'Smart Expense Reimbursement') {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
       } else if (userRole.value === 'Admin') {
-        window.location.href = `/serms/auth/callback?state=/serms/admin/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/admin/dashboard&message=Successfully%20logged%20in`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
-        window.location.href = `/serms/auth/callback?state=/serms/manager/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/manager/dashboard&message=Successfully%20logged%20in`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
-        window.location.href = `/serms/auth/callback?state=/serms/sales/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/sales/dashboard&message=Successfully%20logged%20in`
       } else {
-        window.location.href = `/serms/auth/callback?state=/serms/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/dashboard&message=Successfully%20logged%20in`
       }
     } else if (subsystemTitle === 'Productivity Report System') {
-      window.location.href = '/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in'
+      window.location.href = `${prsUrl}/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in`
     } else if (subsystemTitle === 'User & Access Management') {
       router.push('/admin')
     } else {
