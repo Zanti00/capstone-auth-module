@@ -5,6 +5,7 @@
 import { ref } from 'vue'
 import { authService } from '@/services/authService'
 import type { LoginCredentials, ResetPasswordPayload } from '@/types'
+import { clearClientAuthState } from '@/utils/authState'
 
 export function useAuth() {
   // ── Login ──────────────────────────────────────────────────────────────────
@@ -54,8 +55,7 @@ export function useAuth() {
     } catch {
       // Proceed with local cleanup even if the server call fails
     } finally {
-      localStorage.removeItem('user')
-      window.location.href = '/'
+      clearClientAuthState()
     }
   }
 
@@ -64,7 +64,7 @@ export function useAuth() {
    * Used by idle-timeout handlers and route guards that need synchronous cleanup.
    */
   const clearLocalAuth = () => {
-    localStorage.removeItem('user')
+    clearClientAuthState()
   }
 
   // ── Forgot Password ───────────────────────────────────────────────────────
@@ -173,7 +173,7 @@ export function useAuth() {
     changePasswordGeneralError.value = ''
 
     try {
-      await authService.changePassword(payload)
+      const response = await authService.changePassword(payload)
       changePasswordSuccess.value = true
       
       // Update local storage user flag
@@ -184,11 +184,25 @@ export function useAuth() {
         user.is_active = true
         localStorage.setItem('user', JSON.stringify(user))
       }
+
+      return {
+        success: true,
+        message: response.data?.message || 'Password has been successfully updated.'
+      }
     } catch (error: any) {
       if (error.response?.status === 422) {
         changePasswordErrors.value = error.response.data.errors
       } else {
         changePasswordGeneralError.value = error.response?.data?.message || 'Failed to change password.'
+      }
+
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.errors?.new_password?.[0] ||
+          error.response?.data?.errors?.current_password?.[0] ||
+          'Failed to change password.'
       }
     } finally {
       changePasswordLoading.value = false

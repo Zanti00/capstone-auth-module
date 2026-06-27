@@ -62,6 +62,26 @@ class AdminAccountCreationTest extends TestCase
                  ->assertJsonFragment(['email' => 'new.it@sbsi.com']);
     }
 
+    public function test_it_admin_can_create_account_with_non_sbsi_email_domain()
+    {
+        [$user, $sessionId] = $this->getUserWithSession('admin@example.com'); // IT Admin
+        $itDept = Department::where('name', 'IT')->first();
+        $role = Role::where('name', 'Manager')->first();
+
+        $response = $this->actingAs($user, 'api')
+                         ->withHeader('X-Session-ID', $sessionId)
+                         ->postJson('/api/admin/users', [
+                             'first_name' => 'External',
+                             'last_name' => 'User',
+                             'email' => 'external.user@example.org',
+                             'role_id' => $role->id,
+                             'department_id' => $itDept->id
+                         ]);
+
+        $response->assertStatus(201)
+                 ->assertJsonFragment(['email' => 'external.user@example.org']);
+    }
+
     public function test_sales_marketing_admin_can_create_account_for_sales_marketing_department()
     {
         [$user, $sessionId] = $this->getUserWithSession('sales-marketing-admin@example.com');

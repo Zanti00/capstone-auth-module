@@ -2,42 +2,46 @@
 
 namespace Tests\Feature;
 
-use App\Mail\WelcomeEmail;
-use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendTransactionalEmailJob;
+use App\Models\EmailNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class QueueTest extends TestCase
 {
-    /**
-     * Test that the WelcomeEmail is correctly queued when sent.
-     */
-    public function test_welcome_email_is_correctly_queued()
-    {
-        Mail::fake();
-
-        $email = 'queue-test-' . time() . '@sbsi.com';
-        $password = 'TempPass123!';
-
-        // Dispatch WelcomeEmail
-        Mail::to($email)->send(new WelcomeEmail($email, $password));
-
-        // Assert that the WelcomeEmail was queued to the target email address
-        Mail::assertQueued(WelcomeEmail::class, function ($mail) use ($email) {
-            return $mail->hasTo($email);
-        });
-    }
+    use RefreshDatabase;
 
     /**
-     * Real live test that actually sends the WelcomeEmail to Mailtrap (no Mail::fake()!).
+     * Test that transactional email jobs can be executed successfully.
      */
-    public function test_welcome_email_actually_sends_to_mailtrap()
+    public function test_transactional_email_job_executes_successfully()
     {
-        $email = 'real-queue-test-' . time() . '@sbsi.com';
-        $password = 'TempPass123!';
+        Http::fake([
+            'https://api.brevo.com/v3/smtp/email' => Http::response([
+                'messageId' => 'queue-test-message',
+            ], 201),
+        ]);
 
-        // Dispatch WelcomeEmail live to the queue (no fake)
-        Mail::to($email)->send(new WelcomeEmail($email, $password));
+        $notification = EmailNotification::create([
+            'notification_type' => 'welcome_temp_password',
+            'provider' => 'brevo',
+            'recipient_email' => 'queue-test@example.com',
+            'subject' => 'Welcome',
+            'template_key' => 'welcome_temp_password',
+            'template_id' => '101',
+            'status' => 'pending',
+            'payload' => [
+                'temporary_password' => 'TempPass123!',
+            ],
+        ]);
 
-        $this->assertTrue(true);
+        dispatch_sync(new SendTransactionalEmailJob($notification->id));
+
+        $this->assertDatabaseHas('email_notifications', [
+            'id' => $notification->id,
+            'status' => 'sent',
+            'provider_message_id' => 'queue-test-message',
+        ]);
     }
 }

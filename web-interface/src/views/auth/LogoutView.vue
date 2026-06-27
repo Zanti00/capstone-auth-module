@@ -21,7 +21,8 @@ onMounted(async () => {
   
   const redirectUri = route.query.redirect_uri as string
   if (redirectUri) {
-    window.location.href = redirectUri
+    const separator = redirectUri.includes('?') ? '&' : '?'
+    window.location.href = `${redirectUri}${separator}message=${encodeURIComponent('Successfully logged out.')}`
   } else {
     router.push({ name: 'login', query: { message: 'Successfully logged out.' } })
   }

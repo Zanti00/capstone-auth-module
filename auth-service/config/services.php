@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'brevo' => [
+        'base_url' => env('BREVO_BASE_URL', 'https://api.brevo.com/v3'),
+        'api_key' => env('BREVO_API_KEY'),
+        'webhook_secret' => env('BREVO_WEBHOOK_SECRET'),
+        'webhook_secret_header' => env('BREVO_WEBHOOK_SECRET_HEADER', 'X-Brevo-Webhook-Secret'),
+        'templates' => [
+            'welcome_temp_password' => env('BREVO_TEMPLATE_WELCOME_TEMP_PASSWORD'),
+            'password_reset' => env('BREVO_TEMPLATE_PASSWORD_RESET'),
+            'email_verification' => env('BREVO_TEMPLATE_EMAIL_VERIFICATION'),
+            'password_changed_confirmation' => env('BREVO_TEMPLATE_PASSWORD_CHANGED_CONFIRMATION'),
+        ],
+    ],
+
 ];

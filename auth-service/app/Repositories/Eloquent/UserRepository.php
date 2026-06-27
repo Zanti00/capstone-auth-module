@@ -3,6 +3,7 @@
 namespace App\Repositories\Eloquent;
 
 use App\Models\User;
+use App\Models\UserCredential;
 use App\Models\UserProfile;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -36,16 +37,23 @@ class UserRepository implements UserRepositoryInterface
         return User::where('id', $userId)->update(['is_active' => $isActive]) > 0;
     }
 
-    public function updatePasswordHash(int $userId, string $passwordHash, bool $mustChangePassword = false): bool
+    public function savePasswordCredentials(int $userId, string $passwordHash, bool $mustChangePassword = false): bool
     {
-        return DB::table('user_credentials')
-            ->where('user_id', $userId)
-            ->update([
+        $credentials = UserCredential::updateOrCreate(
+            ['user_id' => $userId],
+            [
                 'password_hash' => $passwordHash,
                 'must_change_password' => $mustChangePassword,
                 'password_changed_at' => now(),
-                'updated_at' => now(),
-            ]) >= 0;
+            ]
+        );
+
+        return $credentials->exists;
+    }
+
+    public function updatePasswordHash(int $userId, string $passwordHash, bool $mustChangePassword = false): bool
+    {
+        return $this->savePasswordCredentials($userId, $passwordHash, $mustChangePassword);
     }
 
     public function createProfile(int $userId, array $data): UserProfile
@@ -60,13 +68,7 @@ class UserRepository implements UserRepositoryInterface
 
     public function createCredentials(int $userId, string $passwordHash, bool $mustChangePassword = true): bool
     {
-        return DB::table('user_credentials')->insert([
-            'user_id' => $userId,
-            'password_hash' => $passwordHash,
-            'must_change_password' => $mustChangePassword,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        return $this->savePasswordCredentials($userId, $passwordHash, $mustChangePassword);
     }
 
     public function getUserPermissions(int $userId): array

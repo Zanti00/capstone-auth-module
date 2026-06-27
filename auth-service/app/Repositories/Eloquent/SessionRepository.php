@@ -22,6 +22,13 @@ class SessionRepository implements SessionRepositoryInterface
         ]);
     }
 
+    public function findSessionById(string $sessionId): ?object
+    {
+        return DB::table('user_sessions')
+            ->where('session_id', $sessionId)
+            ->first();
+    }
+
     public function invalidateSession(string $sessionId): bool
     {
         return DB::table('user_sessions')

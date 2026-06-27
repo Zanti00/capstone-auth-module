@@ -47,7 +47,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           <div 
-            v-for="(sys, i) in subsystems" 
+            v-for="sys in subsystems" 
             :key="sys.title"
             class="glass-card group p-6 rounded-2xl flex flex-col h-full relative overflow-hidden bg-gradient-to-br from-white to-[#fafcff] shadow-md hover:shadow-xl hover:shadow-primary/10 transition-all duration-500"
           >
@@ -145,13 +145,6 @@ const userInitials = computed(() => {
   return 'US'
 })
 
-const timeOfDay = computed(() => {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 18) return 'afternoon'
-  return 'evening'
-})
-
 const subsystems = computed(() => {
   const base = [
     {
@@ -219,36 +212,40 @@ const subsystems = computed(() => {
 
 const handleLogout = async () => {
   await logout()
-  router.push('/')
+  router.push({ name: 'login', query: { message: 'Successfully logged out.' } })
 }
 
 const openModule = (subsystemTitle: string) => {
+    const cmsUrl = import.meta.env.VITE_CMS_URL || ''
+    const sermsUrl = import.meta.env.VITE_SERMS_URL || ''
+    const prsUrl = import.meta.env.VITE_PRS_URL || ''
+
     if (subsystemTitle === 'Contract Management') {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
       } else if (userRole.value === 'Admin') {
-        window.location.href = `/cms/auth/callback?state=/cms/admin/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/admin/dashboard`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
-        window.location.href = `/cms/auth/callback?state=/cms/manager/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/manager/dashboard`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
-        window.location.href = `/cms/auth/callback?state=/cms/sales/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/sales/dashboard`
       } else {
-        window.location.href = `/cms/auth/callback?state=/cms/dashboard`
+        window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/dashboard`
       }
     } else if (subsystemTitle === 'Smart Expense Reimbursement') {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
       } else if (userRole.value === 'Admin') {
-        window.location.href = `/serms/auth/callback?state=/serms/admin/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/admin/dashboard&message=Successfully%20logged%20in`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
-        window.location.href = `/serms/auth/callback?state=/serms/manager/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/manager/dashboard&message=Successfully%20logged%20in`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
-        window.location.href = `/serms/auth/callback?state=/serms/sales/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/sales/dashboard&message=Successfully%20logged%20in`
       } else {
-        window.location.href = `/serms/auth/callback?state=/serms/dashboard&message=Successfully%20logged%20in`
+        window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/dashboard&message=Successfully%20logged%20in`
       }
     } else if (subsystemTitle === 'Productivity Report System') {
-      window.location.href = '/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in'
+      window.location.href = `${prsUrl}/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in`
     } else if (subsystemTitle === 'User & Access Management') {
       router.push('/admin')
     } else {
