@@ -2,7 +2,8 @@
 # injected by the azure Container App. Placeholders are substituted at container
 # start; the upstream hostnames are resolved at nginx config load.
 #
-# Env vars provided by apps.bicep:
+# Env vars provided by apps.bicep (each already includes its http:// scheme),
+# so the proxy_pass lines below must NOT add another scheme:
 #   ${AUTH_WEB_URL}   http://auth-web.<env>.<region>.azurecontainerapps.io
 #   ${AUTH_API_URL}   http://auth-api.<env>.<region>.azurecontainerapps.io
 #   ${SERMS_WEB_URL}  http://serms-web.<env>.<region>.azurecontainerapps.io
@@ -16,7 +17,7 @@ server {
 
     # Auth module web UI at the root (login page, callback handler)
     location / {
-        proxy_pass http://${AUTH_WEB_URL};
+        proxy_pass ${AUTH_WEB_URL};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -34,7 +35,7 @@ server {
         }
         proxy_set_header Authorization $auth_header;
         proxy_set_header Cookie $http_cookie;
-        proxy_pass http://${AUTH_API_URL};
+        proxy_pass ${AUTH_API_URL};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -53,7 +54,7 @@ server {
         }
         proxy_set_header Authorization $auth_header;
         proxy_set_header Cookie $http_cookie;
-        proxy_pass http://${SERMS_API_URL}/api/;
+        proxy_pass ${SERMS_API_URL}/api/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -66,7 +67,7 @@ server {
 
     # SERMS frontend at /serms/ (strips the /serms prefix for the static bundle)
     location /serms/ {
-        proxy_pass http://${SERMS_WEB_URL}/;
+        proxy_pass ${SERMS_WEB_URL}/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
