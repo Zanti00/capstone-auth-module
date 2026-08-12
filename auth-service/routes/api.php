@@ -22,16 +22,15 @@ Route::get('/internal/users-by-roles', [\App\Http\Controllers\InternalUserContro
 Route::get('/internal/users-batch', [\App\Http\Controllers\InternalUserController::class, 'getUsersBatch']);
 
 Route::middleware(['auth:api', 'active.session'])->group(function () {
-    // Routes that must be accessible even if password change is required
+    // Accessible regardless of password change status
+    Route::get('/user', [AuthController::class, 'me']);
+    Route::post('/send-verification', [AuthController::class, 'sendVerification']);
+    Route::post('/verify-password', [AuthController::class, 'verifyPassword']);
+    Route::get('/me/permissions', [AuthController::class, 'permissions']);
+    Route::put('/me/profile', [AuthController::class, 'updateProfile']);
+
     // Routes that require password change
     Route::middleware('require.password.change')->group(function () {
-        Route::post('/send-verification', [AuthController::class, 'sendVerification']);
-        Route::post('/verify-password', [AuthController::class, 'verifyPassword']);
-        Route::get('/user', function (Request $request) {
-            return $request->user();
-        });
-        Route::get('/me/permissions', [AuthController::class, 'permissions']);
-        Route::put('/me/profile', [AuthController::class, 'updateProfile']);
     });
 });
 

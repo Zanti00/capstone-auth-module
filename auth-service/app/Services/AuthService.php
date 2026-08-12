@@ -173,7 +173,7 @@ class AuthService
         ];
     }
 
-    private function formatUserForFrontend(User $user): array
+    public function formatUserForFrontend(User $user): array
     {
         return [
             'id' => $user->id,

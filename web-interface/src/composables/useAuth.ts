@@ -7,6 +7,13 @@ import { authService } from '@/services/authService'
 import type { LoginCredentials, ResetPasswordPayload } from '@/types'
 import { clearClientAuthState } from '@/utils/authState'
 
+export interface FetchCurrentUserResult {
+  success: boolean
+  user: unknown
+  passwordChangeRequired?: boolean
+  sessionExpired?: boolean
+}
+
 export function useAuth() {
   // ── Login ──────────────────────────────────────────────────────────────────
   const loginLoading = ref(false)
@@ -65,6 +72,42 @@ export function useAuth() {
    */
   const clearLocalAuth = () => {
     clearClientAuthState()
+  }
+
+  // ── Fetch Current User ─────────────────────────────────────────────────────
+  // Hydrates the user from the authoritative backend (/api/user). The backend
+  // wraps the user object under a `user` key ({ user: {...} }), matching the
+  // login response shape. Never throws — failures are returned as result objects.
+  const fetchCurrentUser = async (): Promise<FetchCurrentUserResult> => {
+    try {
+      const response = await authService.fetchMe()
+      const user = response.data.user
+
+      localStorage.setItem('user', JSON.stringify(user))
+
+      return { success: true, user }
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        const code = error.response?.data?.code
+        if (code === 'PASSWORD_CHANGE_REQUIRED') {
+          // Authenticated but must change password first — do NOT clear state.
+          return { success: false, user: null, passwordChangeRequired: true }
+        }
+      }
+
+      if (error.response?.status === 401) {
+        // The api.ts response interceptor already attempted a refresh and, on
+        // failure, called clearAuthAndRedirect(). That helper invokes
+        // clearClientAuthState(), which removes localStorage['user'] AND the
+        // is_authenticated cookie, then redirects to '/login'. The explicit
+        // clearClientAuthState() below is a defensive no-op kept for safety.
+        clearClientAuthState()
+        return { success: false, user: null, sessionExpired: true }
+      }
+
+      // Network or other failures — keep the current client state intact.
+      return { success: false, user: null }
+    }
   }
 
   // ── Forgot Password ───────────────────────────────────────────────────────
@@ -218,6 +261,8 @@ export function useAuth() {
     // Logout
     logout,
     clearLocalAuth,
+    // Current User
+    fetchCurrentUser,
     // Forgot Password
     forgotPassword,
     forgotLoading,

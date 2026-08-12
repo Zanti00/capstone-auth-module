@@ -98,13 +98,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { isItAdmin } from '@/utils/role'
 import { FileText, Banknote, Ticket, BarChart3, ShieldCheck, LogOut, ArrowRight } from 'lucide-vue-next'
 
 const router = useRouter()
-const { logout } = useAuth()
+const { logout, fetchCurrentUser } = useAuth()
 
 // Load user from localStorage
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
@@ -143,6 +144,19 @@ const userInitials = computed(() => {
     return name.substring(0, 2).toUpperCase()
   }
   return 'US'
+})
+
+// Refresh the user from the authoritative backend so role-gated cards reflect
+// the current server-side role instead of the one-time localStorage snapshot.
+onMounted(async () => {
+  try {
+    const result = await fetchCurrentUser()
+    if (result.success) {
+      user.value = result.user
+    }
+  } finally {
+    // fetchCurrentUser handles errors internally; this guards the await.
+  }
 })
 
 const subsystems = computed(() => {
@@ -193,7 +207,7 @@ const subsystems = computed(() => {
     }
   ]
 
-  if (userRole.value === 'IT Admin') {
+  if (isItAdmin(user.value)) {
     base.push({
       title: 'User & Access Management',
       desc: 'Manage users, assign roles, define permissions, and configure departments for the entire organization.',
@@ -233,9 +247,7 @@ const openModule = (subsystemTitle: string) => {
         window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/dashboard`
       }
     } else if (subsystemTitle === 'Smart Expense Reimbursement') {
-      if (userRole.value === 'IT Admin') {
-        router.push('/admin')
-      } else if (userRole.value === 'Admin') {
+      if (userRole.value === 'Admin') {
         window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/admin/dashboard&message=Successfully%20logged%20in`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
         window.location.href = `${sermsUrl}/serms/auth/callback?state=/serms/manager/dashboard&message=Successfully%20logged%20in`

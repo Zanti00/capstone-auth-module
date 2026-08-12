@@ -62,6 +62,19 @@ class AuthController extends Controller
         ]);
     }
 
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        return response()->json([
+            'user' => $this->authService->formatUserForFrontend($user),
+        ]);
+    }
+
     public function login(Request $request)
     {
         \Illuminate\Support\Facades\Log::info('Login Attempt Data:', $request->all());

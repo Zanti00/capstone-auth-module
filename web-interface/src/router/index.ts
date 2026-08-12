@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from "vue-router";
 import LandingPage from "../views/LandingPage.vue";
 import LoginView from "../views/auth/LoginView.vue";
 import { clearClientAuthState, isAuthenticatedClientSide } from "@/utils/authState";
+import { isItAdmin } from "@/utils/role";
+import { useAuth } from "@/composables/useAuth";
+import type { FetchCurrentUserResult } from "@/composables/useAuth";
 
 const routes = [
   {
@@ -88,9 +91,38 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, _from, next) => {
+// Only fetchCurrentUser is used here; calling the composable at module scope is
+// safe because it is stateless aside from local refs.
+const { fetchCurrentUser } = useAuth();
+
+// Dedupe concurrent in-flight hydration calls so a burst of navigations only
+// triggers one network request.
+let hydrationPromise: Promise<FetchCurrentUserResult> | null = null;
+
+function hydrateCurrentUser() {
+  if (!hydrationPromise) {
+    hydrationPromise = fetchCurrentUser().finally(() => {
+      hydrationPromise = null;
+    });
+  }
+  return hydrationPromise;
+}
+
+function isEmptyUser(user: unknown): boolean {
+  if (!user || typeof user !== "object") return true;
+  return Object.keys(user).length === 0;
+}
+
+router.beforeEach(async (to, _from, next) => {
   const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
+  let user: unknown = null;
+  if (userStr) {
+    try {
+      user = JSON.parse(userStr);
+    } catch {
+      user = null;
+    }
+  }
   const isAuthenticated = isAuthenticatedClientSide();
 
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
@@ -104,30 +136,99 @@ router.beforeEach((to, _from, next) => {
     "verify-email",
   ];
 
-  // Extract role name safely handling nested profile structure
-  const roleName = user?.profile?.role?.name || user?.role || "";
-
   if (guestOnlyRoutes.includes(to.name as string) && isAuthenticated) {
     next({ name: "home" });
-  } else if (requiresAuth && !isAuthenticated) {
+    return;
+  }
+
+  if (requiresAuth && !isAuthenticated) {
     next({ name: "login" });
-  } else if (
+    return;
+  }
+
+  // Hydrate the authoritative user only when the local snapshot is unusable:
+  //  - the snapshot is missing/empty but the session cookie says we're logged in
+  //    (needed for the null-safe password-change check), or
+  //  - the route requires IT Admin and the snapshot isn't IT Admin.
+  const needsHydration =
+    (requiresAuth && isAuthenticated && isEmptyUser(user)) ||
+    (requiresAdmin && !isItAdmin(user));
+
+  let hydration: FetchCurrentUserResult | null = null;
+  if (needsHydration) {
+    hydration = await hydrateCurrentUser();
+    if (hydration.success && hydration.user) {
+      user = hydration.user;
+    }
+  }
+
+  // Handle hydration outcomes for all authenticated routes before the admin gate
+  // so first-login and expired-session users are routed correctly even when the
+  // local snapshot was empty (e.g. navigating straight to /home).
+  if (isAuthenticated && hydration) {
+    if (hydration.passwordChangeRequired) {
+      next({ name: "force-change-password" });
+      return;
+    }
+
+    if (hydration.sessionExpired) {
+      // The api interceptor already redirected to "/" after a failed refresh;
+      // do not fire deny logic on the same tick.
+      next();
+      return;
+    }
+  }
+
+  // Force password change (null-safe; evaluates from the hydrated user when the
+  // snapshot was empty).
+  if (
     isAuthenticated &&
-    user.is_password_changed === false &&
+    user &&
+    (user as Record<string, unknown>).is_password_changed === false &&
     to.name !== "force-change-password" &&
     to.name !== "logout"
   ) {
     next({ name: "force-change-password" });
-  } else if (requiresAdmin && roleName !== "IT Admin") {
-    // Strictly isolate auth-module interface to IT Admin only
+    return;
+  }
+
+  // IT Admin gate.
+  if (requiresAdmin && !isItAdmin(user)) {
+    if (hydration) {
+      if (hydration.success) {
+        // Hydrated, but the backend says this user is not an IT Admin.
+        alert(
+          "Access Denied: Only IT Admin can access the authentication module interface.",
+        );
+        clearClientAuthState();
+        next({ name: "login" });
+        return;
+      }
+
+      // Network/other failure — fall back to the snapshot. Backend
+      // can:manage-users remains the real authorization boundary.
+      if (isItAdmin(user)) {
+        next();
+        return;
+      }
+      alert(
+        "Access Denied: Only IT Admin can access the authentication module interface.",
+      );
+      clearClientAuthState();
+      next({ name: "login" });
+      return;
+    }
+
+    // Defensive: requiresAdmin without hydration performed (should not happen).
     alert(
       "Access Denied: Only IT Admin can access the authentication module interface.",
     );
     clearClientAuthState();
     next({ name: "login" });
-  } else {
-    next();
+    return;
   }
+
+  next();
 });
 
 export default router;
