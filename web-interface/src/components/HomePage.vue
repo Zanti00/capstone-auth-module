@@ -185,23 +185,43 @@ const handleLogout = () => {
 }
 
 const openModule = (subsystemTitle: string) => {
+    const cmsUrl = import.meta.env.VITE_CMS_URL || ''
+    const sermsUrl = import.meta.env.VITE_SERMS_URL || ''
+    const prsUrl = import.meta.env.VITE_PRS_URL || ''
+
     if (subsystemTitle === 'Contract Management') {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
       } else if (userRole.value === 'Admin') {
-        window.location.href = '/crms/admin/dashboard'
+        window.location.href = `${cmsUrl}/cms/admin/dashboard`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
-        window.location.href = '/crms/manager/dashboard'
+        window.location.href = `${cmsUrl}/cms/manager/dashboard`
       } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
-        window.location.href = '/crms/sales/dashboard'
+        window.location.href = `${cmsUrl}/cms/sales/dashboard`
+      } else {
+        window.location.href = `${cmsUrl}/cms/dashboard`
       }
+    } else if (subsystemTitle === 'Smart Expense Reimbursement') {
+      if (userRole.value === 'IT Admin') {
+        router.push('/admin')
+      } else if (userRole.value === 'Admin') {
+        window.location.href = `${sermsUrl}/serms/admin/dashboard`
+      } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
+        window.location.href = `${sermsUrl}/serms/manager/dashboard`
+      } else if (userRole.value === 'Sales' || userRole.value === 'Employee' || userRole.value === 'Finance Employee' || userRole.value === 'Finance') {
+        window.location.href = `${sermsUrl}/serms/sales/dashboard`
+      } else {
+        window.location.href = `${sermsUrl}/serms/dashboard`
+      }
+    } else if (subsystemTitle === 'Productivity Report System') {
+      window.location.href = `${prsUrl}/prs/app/dashboard`
     } else if (subsystemTitle === 'User & Access Management') {
-    router.push('/admin')
-  } else if (subsystemTitle === 'Ticketing System') {
+      router.push('/admin')
+    } else if (subsystemTitle === 'Ticketing System') {
       window.location.href = '/ticketing/'
-  } else {
-    alert(`${subsystemTitle} is not active in this development environment.`)
-  }
+    } else {
+      alert(`${subsystemTitle} is not active in this development environment.`)
+    }
 }
 
 // Pure visual scroll trigger bindings

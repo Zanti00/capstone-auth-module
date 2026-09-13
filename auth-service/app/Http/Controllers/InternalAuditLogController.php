@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class InternalAuditLogController extends Controller
 {
     /**
-     * Get auth audit logs for Finance department users.
+     * Get auth audit logs for Sales & Marketing department users.
      */
     public function index(Request $request)
     {
@@ -23,7 +23,7 @@ class InternalAuditLogController extends Controller
             ->join('users', 'audit_logs.actor_id', '=', 'users.id')
             ->join('user_profiles', 'users.id', '=', 'user_profiles.user_id')
             ->join('departments', 'user_profiles.department_id', '=', 'departments.id')
-            ->where('departments.name', 'Finance')
+            ->where('departments.name', 'Sales & Marketing')
             ->select([
                 'audit_logs.id',
                 'audit_logs.actor_id as user_id',

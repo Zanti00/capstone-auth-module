@@ -1,118 +1,234 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import LandingPage from '../views/LandingPage.vue'
-import LoginView from '../views/auth/LoginView.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import LandingPage from "../views/LandingPage.vue";
+import LoginView from "../views/auth/LoginView.vue";
+import { clearClientAuthState, isAuthenticatedClientSide } from "@/utils/authState";
+import { isItAdmin } from "@/utils/role";
+import { useAuth } from "@/composables/useAuth";
+import type { FetchCurrentUserResult } from "@/composables/useAuth";
 
 const routes = [
   {
-    path: '/',
-    name: 'landing',
-    component: LandingPage
+    path: "/",
+    name: "landing",
+    component: LandingPage,
   },
   {
-    path: '/login',
-    name: 'login',
-    component: LoginView
+    path: "/login",
+    name: "login",
+    component: LoginView,
   },
   {
-    path: '/logout',
-    name: 'logout',
-    component: () => import('../views/auth/LogoutView.vue')
+    path: "/logout",
+    name: "logout",
+    component: () => import("../views/auth/LogoutView.vue"),
   },
   {
-    path: '/forgot-password',
-    name: 'forgot-password',
-    component: () => import('../views/auth/ForgotPassword.vue')
+    path: "/forgot-password",
+    name: "forgot-password",
+    component: () => import("../views/auth/ForgotPassword.vue"),
   },
   {
-    path: '/reset-password',
-    name: 'reset-password',
-    component: () => import('../views/auth/ResetPassword.vue')
+    path: "/reset-password/:token?",
+    name: "reset-password",
+    component: () => import("../views/auth/ResetPassword.vue"),
   },
   {
-    path: '/verify-email',
-    name: 'verify-email',
-    component: () => import('../views/auth/EmailVerification.vue')
+    path: "/verify-email",
+    name: "verify-email",
+    component: () => import("../views/auth/EmailVerification.vue"),
   },
   {
-    path: '/force-change-password',
-    name: 'force-change-password',
-    component: () => import('../views/auth/ForceChangePassword.vue'),
-    meta: { requiresAuth: true }
+    path: "/force-change-password",
+    name: "force-change-password",
+    component: () => import("../views/auth/ForceChangePassword.vue"),
+    meta: { requiresAuth: true },
   },
   {
-    path: '/home',
-    name: 'home',
-    component: () => import('../views/HomePage.vue'),
-    meta: { requiresAuth: true }
+    path: "/home",
+    name: "home",
+    component: () => import("../views/HomePage.vue"),
+    meta: { requiresAuth: true },
   },
   {
-    path: '/admin',
-    component: () => import('../layouts/AdminLayout.vue'),
-    redirect: '/admin/users',
+    path: "/admin",
+    component: () => import("../layouts/AdminLayout.vue"),
+    redirect: "/admin/users",
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       {
-        path: 'users',
-        name: 'admin-user-list',
-        component: () => import('../components/users/UserManagement.vue')
+        path: "users",
+        name: "admin-user-list",
+        component: () => import("../components/users/UserManagement.vue"),
       },
       {
-        path: 'users/create',
-        name: 'admin-user-create',
-        component: () => import('../components/users/UserCreate.vue')
+        path: "users/create",
+        name: "admin-user-create",
+        component: () => import("../components/users/UserCreate.vue"),
       },
       {
-        path: 'roles',
-        name: 'admin-role-management',
-        component: () => import('../components/roles/RoleManagement.vue')
+        path: "roles",
+        name: "admin-role-management",
+        component: () => import("../components/roles/RoleManagement.vue"),
       },
       {
-        path: 'permissions',
-        name: 'admin-permission-management',
-        component: () => import('../components/permissions/PermissionManagement.vue')
+        path: "permissions",
+        name: "admin-permission-management",
+        component: () =>
+          import("../components/permissions/PermissionManagement.vue"),
       },
       {
-        path: 'departments',
-        name: 'admin-department-management',
-        component: () => import('../components/departments/DepartmentManagement.vue')
-      }
-    ]
-  }
-]
+        path: "departments",
+        name: "admin-department-management",
+        component: () =>
+          import("../components/departments/DepartmentManagement.vue"),
+      },
+    ],
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
-router.beforeEach((to, _from, next) => {
-  const userStr = localStorage.getItem('user')
-  const user = userStr ? JSON.parse(userStr) : null
-  const isAuthenticated = !!user
+// Only fetchCurrentUser is used here; calling the composable at module scope is
+// safe because it is stateless aside from local refs.
+const { fetchCurrentUser } = useAuth();
 
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
+// Dedupe concurrent in-flight hydration calls so a burst of navigations only
+// triggers one network request.
+let hydrationPromise: Promise<FetchCurrentUserResult> | null = null;
 
-  const guestOnlyRoutes = ['landing', 'login', 'forgot-password', 'reset-password', 'verify-email']
+function hydrateCurrentUser() {
+  if (!hydrationPromise) {
+    hydrationPromise = fetchCurrentUser().finally(() => {
+      hydrationPromise = null;
+    });
+  }
+  return hydrationPromise;
+}
 
-  // Extract role name safely handling nested profile structure
-  const roleName = user?.profile?.role?.name || user?.role || ''
+function isEmptyUser(user: unknown): boolean {
+  if (!user || typeof user !== "object") return true;
+  return Object.keys(user).length === 0;
+}
+
+router.beforeEach(async (to, _from, next) => {
+  const userStr = localStorage.getItem("user");
+  let user: unknown = null;
+  if (userStr) {
+    try {
+      user = JSON.parse(userStr);
+    } catch {
+      user = null;
+    }
+  }
+  const isAuthenticated = isAuthenticatedClientSide();
+
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin);
+
+  const guestOnlyRoutes = [
+    "landing",
+    "login",
+    "forgot-password",
+    "reset-password",
+    "verify-email",
+  ];
 
   if (guestOnlyRoutes.includes(to.name as string) && isAuthenticated) {
-    next({ name: 'home' })
-  } else if (requiresAuth && !isAuthenticated) {
-    next({ name: 'login' })
-  } else if (isAuthenticated && user.is_password_changed === false && to.name !== 'force-change-password' && to.name !== 'logout') {
-    next({ name: 'force-change-password' })
-  } else if (requiresAdmin && roleName !== 'IT Admin') {
-    // Strictly isolate auth-module interface to IT Admin only
-    alert('Access Denied: Only IT Admin can access the authentication module interface.')
-    localStorage.removeItem('session_id')
-    localStorage.removeItem('user')
-    next({ name: 'login' })
-  } else {
-    next()
+    next({ name: "home" });
+    return;
   }
-})
 
-export default router
+  if (requiresAuth && !isAuthenticated) {
+    next({ name: "login" });
+    return;
+  }
+
+  // Hydrate the authoritative user only when the local snapshot is unusable:
+  //  - the snapshot is missing/empty but the session cookie says we're logged in
+  //    (needed for the null-safe password-change check), or
+  //  - the route requires IT Admin and the snapshot isn't IT Admin.
+  const needsHydration =
+    (requiresAuth && isAuthenticated && isEmptyUser(user)) ||
+    (requiresAdmin && !isItAdmin(user));
+
+  let hydration: FetchCurrentUserResult | null = null;
+  if (needsHydration) {
+    hydration = await hydrateCurrentUser();
+    if (hydration.success && hydration.user) {
+      user = hydration.user;
+    }
+  }
+
+  // Handle hydration outcomes for all authenticated routes before the admin gate
+  // so first-login and expired-session users are routed correctly even when the
+  // local snapshot was empty (e.g. navigating straight to /home).
+  if (isAuthenticated && hydration) {
+    if (hydration.passwordChangeRequired) {
+      next({ name: "force-change-password" });
+      return;
+    }
+
+    if (hydration.sessionExpired) {
+      // The api interceptor already redirected to "/" after a failed refresh;
+      // do not fire deny logic on the same tick.
+      next();
+      return;
+    }
+  }
+
+  // Force password change (null-safe; evaluates from the hydrated user when the
+  // snapshot was empty).
+  if (
+    isAuthenticated &&
+    user &&
+    (user as Record<string, unknown>).is_password_changed === false &&
+    to.name !== "force-change-password" &&
+    to.name !== "logout"
+  ) {
+    next({ name: "force-change-password" });
+    return;
+  }
+
+  // IT Admin gate.
+  if (requiresAdmin && !isItAdmin(user)) {
+    if (hydration) {
+      if (hydration.success) {
+        // Hydrated, but the backend says this user is not an IT Admin.
+        alert(
+          "Access Denied: Only IT Admin can access the authentication module interface.",
+        );
+        clearClientAuthState();
+        next({ name: "login" });
+        return;
+      }
+
+      // Network/other failure — fall back to the snapshot. Backend
+      // can:manage-users remains the real authorization boundary.
+      if (isItAdmin(user)) {
+        next();
+        return;
+      }
+      alert(
+        "Access Denied: Only IT Admin can access the authentication module interface.",
+      );
+      clearClientAuthState();
+      next({ name: "login" });
+      return;
+    }
+
+    // Defensive: requiresAdmin without hydration performed (should not happen).
+    alert(
+      "Access Denied: Only IT Admin can access the authentication module interface.",
+    );
+    clearClientAuthState();
+    next({ name: "login" });
+    return;
+  }
+
+  next();
+});
+
+export default router;

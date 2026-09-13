@@ -51,9 +51,9 @@ class DepartmentService
         $departments = $this->getAllDepartments();
 
         if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
                 $departments = array_filter($departments, function($d) {
-                    return $d['name'] === 'Finance';
+                    return $d['name'] === 'Sales & Marketing';
                 });
                 $departments = array_values($departments);
             } else {

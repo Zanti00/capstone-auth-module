@@ -9,6 +9,8 @@ interface SessionRepositoryInterface
 {
     public function createSession(int $userId, string $sessionId, string $ip, string $userAgent): bool;
 
+    public function findSessionById(string $sessionId): ?object;
+
     public function invalidateSession(string $sessionId): bool;
 
     public function invalidateAllSessions(int $userId): bool;

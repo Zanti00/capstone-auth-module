@@ -25,26 +25,26 @@ return new class extends Migration
 
         // 2. Sync default permissions to Finance Manager (matching standard Manager)
         $managerPerms = Permission::whereIn('slug', [
-            'crms.templates.use',
-            'crms.ocr.upload',
-            'crms.ocr.process',
-            'crms.ocr.review',
-            'crms.contracts.generate',
-            'crms.risk.assess',
-            'crms.risk.view',
-            'crms.risk.approve',
-            'crms.contracts.view',
-            'crms.contracts.create',
-            'crms.contracts.edit',
-            'crms.users.view',
-            'crms.partners.view',
-            'crms.partners.create',
-            'crms.partners.edit',
+            'cms.templates.use',
+            'cms.ocr.upload',
+            'cms.ocr.process',
+            'cms.ocr.review',
+            'cms.contracts.generate',
+            'cms.risk.assess',
+            'cms.risk.view',
+            'cms.risk.approve',
+            'cms.contracts.view',
+            'cms.contracts.create',
+            'cms.contracts.edit',
+            'cms.users.view',
+            'cms.partners.view',
+            'cms.partners.create',
+            'cms.partners.edit',
         ])->pluck('id');
         $financeManager->permissions()->syncWithoutDetaching($managerPerms);
 
         // 3. Migrate existing Finance users who have Manager/Employee roles to the new department-specific roles
-        $financeDept = DB::table('departments')->where('name', 'Finance')->first();
+        $financeDept = DB::table('departments')->where('name', 'Sales & Marketing')->first();
         if ($financeDept) {
             $managerRole = DB::table('roles')->where('name', 'Manager')->first();
             $employeeRole = DB::table('roles')->where('name', 'Employee')->first();

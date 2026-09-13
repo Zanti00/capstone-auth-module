@@ -5,6 +5,14 @@
 import { ref } from 'vue'
 import { authService } from '@/services/authService'
 import type { LoginCredentials, ResetPasswordPayload } from '@/types'
+import { clearClientAuthState } from '@/utils/authState'
+
+export interface FetchCurrentUserResult {
+  success: boolean
+  user: unknown
+  passwordChangeRequired?: boolean
+  sessionExpired?: boolean
+}
 
 export function useAuth() {
   // ── Login ──────────────────────────────────────────────────────────────────
@@ -54,8 +62,7 @@ export function useAuth() {
     } catch {
       // Proceed with local cleanup even if the server call fails
     } finally {
-      localStorage.removeItem('user')
-      window.location.href = '/'
+      clearClientAuthState()
     }
   }
 
@@ -64,7 +71,43 @@ export function useAuth() {
    * Used by idle-timeout handlers and route guards that need synchronous cleanup.
    */
   const clearLocalAuth = () => {
-    localStorage.removeItem('user')
+    clearClientAuthState()
+  }
+
+  // ── Fetch Current User ─────────────────────────────────────────────────────
+  // Hydrates the user from the authoritative backend (/api/user). The backend
+  // wraps the user object under a `user` key ({ user: {...} }), matching the
+  // login response shape. Never throws — failures are returned as result objects.
+  const fetchCurrentUser = async (): Promise<FetchCurrentUserResult> => {
+    try {
+      const response = await authService.fetchMe()
+      const user = response.data.user
+
+      localStorage.setItem('user', JSON.stringify(user))
+
+      return { success: true, user }
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        const code = error.response?.data?.code
+        if (code === 'PASSWORD_CHANGE_REQUIRED') {
+          // Authenticated but must change password first — do NOT clear state.
+          return { success: false, user: null, passwordChangeRequired: true }
+        }
+      }
+
+      if (error.response?.status === 401) {
+        // The api.ts response interceptor already attempted a refresh and, on
+        // failure, called clearAuthAndRedirect(). That helper invokes
+        // clearClientAuthState(), which removes localStorage['user'] AND the
+        // is_authenticated cookie, then redirects to '/login'. The explicit
+        // clearClientAuthState() below is a defensive no-op kept for safety.
+        clearClientAuthState()
+        return { success: false, user: null, sessionExpired: true }
+      }
+
+      // Network or other failures — keep the current client state intact.
+      return { success: false, user: null }
+    }
   }
 
   // ── Forgot Password ───────────────────────────────────────────────────────
@@ -173,7 +216,7 @@ export function useAuth() {
     changePasswordGeneralError.value = ''
 
     try {
-      await authService.changePassword(payload)
+      const response = await authService.changePassword(payload)
       changePasswordSuccess.value = true
       
       // Update local storage user flag
@@ -181,13 +224,28 @@ export function useAuth() {
       if (userStr) {
         const user = JSON.parse(userStr)
         user.is_password_changed = true
+        user.is_active = true
         localStorage.setItem('user', JSON.stringify(user))
+      }
+
+      return {
+        success: true,
+        message: response.data?.message || 'Password has been successfully updated.'
       }
     } catch (error: any) {
       if (error.response?.status === 422) {
         changePasswordErrors.value = error.response.data.errors
       } else {
         changePasswordGeneralError.value = error.response?.data?.message || 'Failed to change password.'
+      }
+
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.errors?.new_password?.[0] ||
+          error.response?.data?.errors?.current_password?.[0] ||
+          'Failed to change password.'
       }
     } finally {
       changePasswordLoading.value = false
@@ -203,6 +261,8 @@ export function useAuth() {
     // Logout
     logout,
     clearLocalAuth,
+    // Current User
+    fetchCurrentUser,
     // Forgot Password
     forgotPassword,
     forgotLoading,

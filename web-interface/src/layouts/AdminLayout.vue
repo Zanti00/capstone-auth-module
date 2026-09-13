@@ -18,7 +18,7 @@ const { logout, clearLocalAuth } = useAuth()
 
 const handleLogout = async () => {
   await logout()
-  router.push('/')
+  router.push({ name: 'login', query: { message: 'Successfully logged out.' } })
 }
 
 // Idle logout logic (2 hours)

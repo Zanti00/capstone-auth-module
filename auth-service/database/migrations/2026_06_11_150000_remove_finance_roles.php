@@ -52,21 +52,21 @@ return new class extends Migration
 
         // Sync manager permissions back to Finance Manager
         $managerPerms = DB::table('permissions')->whereIn('slug', [
-            'crms.templates.use',
-            'crms.ocr.upload',
-            'crms.ocr.process',
-            'crms.ocr.review',
-            'crms.contracts.generate',
-            'crms.risk.assess',
-            'crms.risk.view',
-            'crms.risk.approve',
-            'crms.contracts.view',
-            'crms.contracts.create',
-            'crms.contracts.edit',
-            'crms.users.view',
-            'crms.partners.view',
-            'crms.partners.create',
-            'crms.partners.edit',
+            'cms.templates.use',
+            'cms.ocr.upload',
+            'cms.ocr.process',
+            'cms.ocr.review',
+            'cms.contracts.generate',
+            'cms.risk.assess',
+            'cms.risk.view',
+            'cms.risk.approve',
+            'cms.contracts.view',
+            'cms.contracts.create',
+            'cms.contracts.edit',
+            'cms.users.view',
+            'cms.partners.view',
+            'cms.partners.create',
+            'cms.partners.edit',
         ])->pluck('id');
         $financeManager->permissions()->syncWithoutDetaching($managerPerms);
     }

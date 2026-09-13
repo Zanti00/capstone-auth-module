@@ -23,7 +23,7 @@ class RolePolicy
         }
 
         $department = DB::table('departments')->where('id', $user->profile->department_id)->first();
-        if ($role && $role->name === 'Admin' && $department && $department->name === 'Finance') {
+        if ($role && $role->name === 'Admin' && $department && $department->name === 'Sales & Marketing') {
             return true;
         }
 

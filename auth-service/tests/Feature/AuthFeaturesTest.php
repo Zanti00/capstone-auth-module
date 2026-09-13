@@ -20,6 +20,7 @@ class AuthFeaturesTest extends TestCase
         $user = \App\Models\User::create([
             'email' => 'admin@example.com',
             'is_active' => true,
+            'is_password_changed' => true,
         ]);
         
         // Assuming there is a credentials table relationship for the password hash

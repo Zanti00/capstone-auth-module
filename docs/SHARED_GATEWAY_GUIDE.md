@@ -44,12 +44,12 @@ All capstone subsystems share a single Nginx reverse proxy container (`shared-ng
                           │  ├─────────────────┬───────────────────────┤          │
                           │  │                 │                       │          │
                           │  ▼                 ▼                       ▼          │
-                          │ /                 /serms/               /crms/        │
-                          │ /api/             /api/serms/           /api/crms/    │
+                          │ /                 /serms/               /cms/         │
+                          │ /api/             /api/serms/           /api/cms/     │
                           │  │                 │                       │          │
                           │  ▼                 ▼                       ▼          │
-                          │ web-interface    serms_web              crms-web      │
-                          │ auth-service     serms_api              crms-api(s)   │
+                          │ web-interface    serms_web              cms-web       │
+                          │ auth-service     serms_api              cms-api(s)    │
                           │                                                      │
                           └──────────────────────────────────────────────────────┘
 ```
@@ -349,7 +349,7 @@ const response = await fetch('/api/my-system/users', {
 | `/api/` | Backend | `auth-service:8000/api/` | Auth Module |
 | `/serms/` | Frontend | `serms_web:5002` | SERMS |
 | `/api/serms/` | Backend | `serms_api:8000/api/` | SERMS |
-| `/crms/` | Frontend | `crms-web:5001` | CRMS |
+| `/cms/` | Frontend | `cms-web:5001` | CMS |
 
 ### Naming convention
 
@@ -364,8 +364,8 @@ For **microservice** architectures with multiple backends, use a nested pattern:
 
 | Component | Path Pattern | Example |
 |:---|:---|:---|
-| Vendor service | `/api/crms/vendor/` | Proxies to `vendor-management:8000` |
-| Contract service | `/api/crms/contract/` | Proxies to `contract-management:8000` |
+| Vendor service | `/api/cms/vendor/` | Proxies to `vendor-management:8000` |
+| Contract service | `/api/cms/contract/` | Proxies to `contract-management:8000` |
 
 ### Reserved paths
 
@@ -374,7 +374,7 @@ These paths are already taken and must not be reused:
 - `/` — Auth Module frontend
 - `/api/` — Auth Module API
 - `/serms/` and `/api/serms/` — SERMS
-- `/crms/` — CRMS frontend
+- `/cms/` — CMS frontend
 
 ---
 

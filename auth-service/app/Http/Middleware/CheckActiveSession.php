@@ -44,8 +44,17 @@ class CheckActiveSession
         DB::table('user_sessions')->where('session_id', $sessionId)->update(['last_active_at' => now()]);
 
         $user = $request->user();
+        $isPasswordChangeRoute = $request->is('api/me/password');
 
-        if (!$user || !$user->is_active) {
+        if (!$user) {
+            \Illuminate\Support\Facades\Log::error('CheckActiveSession: Authenticated user missing after session lookup');
+            return response()->json(['message' => 'Unauthenticated. Please log in.'], 401);
+        }
+
+        // Allow first-login / forced-password-change users to reach the password update
+        // endpoint even if their account is not active yet. The password change flow
+        // itself will activate the account after a successful update.
+        if (!$user->is_active && !$isPasswordChangeRoute) {
             \Illuminate\Support\Facades\Log::error('CheckActiveSession: User inactive', ['user' => $user]);
             return response()->json(['message' => 'User account is inactive.'], 401);
         }

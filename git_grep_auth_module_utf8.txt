@@ -1,0 +1,164 @@
+﻿.agent/prd/PRD.md:16:- Internal engineers and microservices (SERMS, CRMS, PRS, TS) that interact with the Auth module.
+auth-service/app/Services/InternalAuditService.php:17:            Log::warning('INTERNAL_SERVICE_SECRET is not configured. CRMS Audit Log push skipped.');
+auth-service/app/Services/InternalAuditService.php:47:            Log::error('Failed to push audit event to CRMS: ' . $e->getMessage());
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:28:            'crms.templates.use',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:29:            'crms.ocr.upload',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:30:            'crms.ocr.process',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:31:            'crms.ocr.review',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:32:            'crms.contracts.generate',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:33:            'crms.risk.assess',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:34:            'crms.risk.view',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:35:            'crms.risk.approve',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:36:            'crms.contracts.view',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:37:            'crms.contracts.create',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:38:            'crms.contracts.edit',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:39:            'crms.users.view',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:40:            'crms.partners.view',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:41:            'crms.partners.create',
+auth-service/database/migrations/2026_05_22_030000_create_finance_department_roles.php:42:            'crms.partners.edit',
+auth-service/database/migrations/2026_05_23_010000_add_approve_contracts_permission.php:17:            ['slug' => 'crms.contracts.approve'],
+auth-service/database/migrations/2026_05_23_010000_add_approve_contracts_permission.php:20:                'system' => 'crms',
+auth-service/database/migrations/2026_05_23_010000_add_approve_contracts_permission.php:26:        $permission = DB::table('permissions')->where('slug', 'crms.contracts.approve')->first();
+auth-service/database/migrations/2026_05_23_010000_add_approve_contracts_permission.php:49:        $permission = DB::table('permissions')->where('slug', 'crms.contracts.approve')->first();
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:55:            'crms.templates.use',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:56:            'crms.ocr.upload',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:57:            'crms.ocr.process',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:58:            'crms.ocr.review',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:59:            'crms.contracts.generate',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:60:            'crms.risk.assess',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:61:            'crms.risk.view',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:62:            'crms.risk.approve',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:63:            'crms.contracts.view',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:64:            'crms.contracts.create',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:65:            'crms.contracts.edit',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:66:            'crms.users.view',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:67:            'crms.partners.view',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:68:            'crms.partners.create',
+auth-service/database/migrations/2026_06_11_150000_remove_finance_roles.php:69:            'crms.partners.edit',
+auth-service/database/seeders/RolePermissionSeeder.php:40:            // CRMS Feature Permissions (legacy / internal)
+auth-service/database/seeders/RolePermissionSeeder.php:41:            ['name' => 'Manage CRMS Roles',    'slug' => 'crms.roles.manage',        'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:42:            ['name' => 'Manage Templates',     'slug' => 'crms.templates.manage',    'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:43:            ['name' => 'Use Templates',        'slug' => 'crms.templates.use',       'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:44:            ['name' => 'OCR Upload',           'slug' => 'crms.ocr.upload',          'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:45:            ['name' => 'OCR Process',          'slug' => 'crms.ocr.process',         'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:46:            ['name' => 'OCR Review',           'slug' => 'crms.ocr.review',          'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:47:            ['name' => 'Generate Draft',       'slug' => 'crms.contracts.generate',  'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:48:            ['name' => 'Run Risk Assessment',  'slug' => 'crms.risk.assess',         'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:49:            ['name' => 'View Risk Highlights', 'slug' => 'crms.risk.view',           'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:50:            ['name' => 'Approve/Override Risk','slug' => 'crms.risk.approve',        'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:52:            // CRMS CRUD Permissions ΓÇö Contracts (maps to "Contracts" UI category)
+auth-service/database/seeders/RolePermissionSeeder.php:53:            ['name' => 'View Contracts',   'slug' => 'crms.contracts.view',   'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:54:            ['name' => 'Create Contracts', 'slug' => 'crms.contracts.create', 'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:55:            ['name' => 'Edit Contracts',   'slug' => 'crms.contracts.edit',   'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:56:            ['name' => 'Delete Contracts', 'slug' => 'crms.contracts.delete', 'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:57:            ['name' => 'Approve Contracts', 'slug' => 'crms.contracts.approve', 'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:59:            // CRMS CRUD Permissions ΓÇö User Management (maps to "User Management" UI category)
+auth-service/database/seeders/RolePermissionSeeder.php:60:            ['name' => 'View Users',   'slug' => 'crms.users.view',   'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:61:            ['name' => 'Create Users', 'slug' => 'crms.users.create', 'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:62:            ['name' => 'Edit Users',   'slug' => 'crms.users.edit',   'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:63:            ['name' => 'Delete Users', 'slug' => 'crms.users.delete', 'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:65:            // CRMS CRUD Permissions ΓÇö Partners (maps to "Business Partners & Suppliers" UI category)
+auth-service/database/seeders/RolePermissionSeeder.php:66:            ['name' => 'View Partners',   'slug' => 'crms.partners.view',   'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:67:            ['name' => 'Create Partners', 'slug' => 'crms.partners.create', 'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:68:            ['name' => 'Edit Partners',   'slug' => 'crms.partners.edit',   'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:69:            ['name' => 'Delete Partners', 'slug' => 'crms.partners.delete', 'system' => 'crms'],
+auth-service/database/seeders/RolePermissionSeeder.php:93:        // 2. CRMS Admin ΓÇö full access to everything
+auth-service/database/seeders/RolePermissionSeeder.php:94:        $crmsAdmin = \App\Models\Role::where('name', 'Admin')->first();
+auth-service/database/seeders/RolePermissionSeeder.php:95:        if ($crmsAdmin) {
+auth-service/database/seeders/RolePermissionSeeder.php:97:                'crms.roles.manage',
+auth-service/database/seeders/RolePermissionSeeder.php:98:                'crms.templates.manage',
+auth-service/database/seeders/RolePermissionSeeder.php:99:                'crms.templates.use',
+auth-service/database/seeders/RolePermissionSeeder.php:100:                'crms.ocr.upload',
+auth-service/database/seeders/RolePermissionSeeder.php:101:                'crms.ocr.process',
+auth-service/database/seeders/RolePermissionSeeder.php:102:                'crms.ocr.review',
+auth-service/database/seeders/RolePermissionSeeder.php:103:                'crms.contracts.generate',
+auth-service/database/seeders/RolePermissionSeeder.php:104:                'crms.risk.assess',
+auth-service/database/seeders/RolePermissionSeeder.php:105:                'crms.risk.view',
+auth-service/database/seeders/RolePermissionSeeder.php:106:                'crms.risk.approve',
+auth-service/database/seeders/RolePermissionSeeder.php:108:                'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.delete', 'crms.contracts.approve',
+auth-service/database/seeders/RolePermissionSeeder.php:109:                'crms.users.view',     'crms.users.create',     'crms.users.edit',     'crms.users.delete',
+auth-service/database/seeders/RolePermissionSeeder.php:110:                'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',  'crms.partners.delete',
+auth-service/database/seeders/RolePermissionSeeder.php:114:            $crmsAdmin->permissions()->syncWithoutDetaching($adminPerms->pluck('id'));
+auth-service/database/seeders/RolePermissionSeeder.php:117:        // 3. CRMS Manager ΓÇö broad access, cannot delete users or manage roles
+auth-service/database/seeders/RolePermissionSeeder.php:118:        $crmsManager = \App\Models\Role::where('name', 'Manager')->first();
+auth-service/database/seeders/RolePermissionSeeder.php:119:        if ($crmsManager) {
+auth-service/database/seeders/RolePermissionSeeder.php:121:                'crms.templates.use',
+auth-service/database/seeders/RolePermissionSeeder.php:122:                'crms.ocr.upload',
+auth-service/database/seeders/RolePermissionSeeder.php:123:                'crms.ocr.process',
+auth-service/database/seeders/RolePermissionSeeder.php:124:                'crms.ocr.review',
+auth-service/database/seeders/RolePermissionSeeder.php:125:                'crms.contracts.generate',
+auth-service/database/seeders/RolePermissionSeeder.php:126:                'crms.risk.assess',
+auth-service/database/seeders/RolePermissionSeeder.php:127:                'crms.risk.view',
+auth-service/database/seeders/RolePermissionSeeder.php:128:                'crms.risk.approve',
+auth-service/database/seeders/RolePermissionSeeder.php:130:                'crms.contracts.view', 'crms.contracts.create', 'crms.contracts.edit', 'crms.contracts.approve',
+auth-service/database/seeders/RolePermissionSeeder.php:131:                'crms.users.view',
+auth-service/database/seeders/RolePermissionSeeder.php:132:                'crms.partners.view',  'crms.partners.create',  'crms.partners.edit',
+auth-service/database/seeders/RolePermissionSeeder.php:135:            $crmsManager->permissions()->syncWithoutDetaching($managerPerms->pluck('id'));
+auth-service/database/seeders/RolePermissionSeeder.php:140:        // 4. CRMS Sales ΓÇö limited, view-only on most; own-record access enforced by app logic
+auth-service/database/seeders/RolePermissionSeeder.php:141:        $crmsSales = \App\Models\Role::where('name', 'Sales')->first();
+auth-service/database/seeders/RolePermissionSeeder.php:142:        if ($crmsSales) {
+auth-service/database/seeders/RolePermissionSeeder.php:144:                'crms.templates.use',
+auth-service/database/seeders/RolePermissionSeeder.php:145:                'crms.ocr.upload',
+auth-service/database/seeders/RolePermissionSeeder.php:146:                'crms.ocr.process',
+auth-service/database/seeders/RolePermissionSeeder.php:147:                'crms.ocr.review',
+auth-service/database/seeders/RolePermissionSeeder.php:148:                'crms.contracts.generate',
+auth-service/database/seeders/RolePermissionSeeder.php:149:                'crms.risk.assess',
+auth-service/database/seeders/RolePermissionSeeder.php:150:                'crms.risk.view',
+auth-service/database/seeders/RolePermissionSeeder.php:151:                'crms.risk.approve',
+auth-service/database/seeders/RolePermissionSeeder.php:153:                'crms.contracts.view',
+auth-service/database/seeders/RolePermissionSeeder.php:154:                'crms.contracts.approve',
+auth-service/database/seeders/RolePermissionSeeder.php:155:                'crms.users.view',
+auth-service/database/seeders/RolePermissionSeeder.php:156:                'crms.partners.view',
+auth-service/database/seeders/RolePermissionSeeder.php:158:            $crmsSales->permissions()->syncWithoutDetaching($salesPerms->pluck('id'));
+auth-service/tests/Feature/CrmsAuthorizationTest.php:11:class CrmsAuthorizationTest extends TestCase
+auth-service/tests/Feature/CrmsAuthorizationTest.php:24:     * Test that CRMS permissions are correctly seeded and tagged.
+auth-service/tests/Feature/CrmsAuthorizationTest.php:26:    public function test_crms_permissions_are_seeded()
+auth-service/tests/Feature/CrmsAuthorizationTest.php:29:            'slug' => 'crms.roles.manage',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:30:            'system' => 'crms'
+auth-service/tests/Feature/CrmsAuthorizationTest.php:34:            'slug' => 'crms.ocr.upload',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:35:            'system' => 'crms'
+auth-service/tests/Feature/CrmsAuthorizationTest.php:40:     * Test that Admin role has CRMS admin permissions.
+auth-service/tests/Feature/CrmsAuthorizationTest.php:42:    public function test_admin_has_correct_crms_permissions()
+auth-service/tests/Feature/CrmsAuthorizationTest.php:46:        $this->assertTrue($adminRole->permissions->contains('slug', 'crms.roles.manage'));
+auth-service/tests/Feature/CrmsAuthorizationTest.php:47:        $this->assertTrue($adminRole->permissions->contains('slug', 'crms.templates.manage'));
+auth-service/tests/Feature/CrmsAuthorizationTest.php:50:        $this->assertTrue($adminRole->permissions->contains('slug', 'crms.ocr.upload'));
+auth-service/tests/Feature/CrmsAuthorizationTest.php:60:        $this->assertTrue($salesRole->permissions->contains('slug', 'crms.ocr.upload'));
+auth-service/tests/Feature/CrmsAuthorizationTest.php:61:        $this->assertTrue($salesRole->permissions->contains('slug', 'crms.risk.assess'));
+auth-service/tests/Feature/CrmsAuthorizationTest.php:62:        $this->assertTrue($salesRole->permissions->contains('slug', 'crms.risk.approve'));
+auth-service/tests/Feature/CrmsAuthorizationTest.php:90:                         ->getJson('/api/me/permissions?system=crms');
+auth-service/tests/Feature/CrmsAuthorizationTest.php:94:                     'crms.templates.use',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:95:                     'crms.ocr.upload',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:96:                     'crms.ocr.process',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:97:                     'crms.ocr.review',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:98:                     'crms.contracts.generate',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:99:                     'crms.risk.assess',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:100:                     'crms.risk.view',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:101:                     'crms.risk.approve',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:102:                     'crms.contracts.view',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:103:                     'crms.contracts.approve',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:104:                     'crms.users.view',
+auth-service/tests/Feature/CrmsAuthorizationTest.php:105:                     'crms.partners.view'
+auth-service/tests/Feature/CrmsAuthorizationTest.php:108:        // Ensure auth-service internal permissions are NOT included in CRMS filtered request
+auth-service/tests/Feature/FinanceAdminRolePermissionTest.php:256:        $permission = Permission::where('slug', 'crms.templates.use')->first();
+auth-service/tests/Feature/RoleManagementTest.php:128:        $permission1 = Permission::where('slug', 'crms.roles.manage')->first();
+auth-service/tests/Feature/RoleManagementTest.php:129:        $permission2 = Permission::where('slug', 'crms.templates.manage')->first();
+docs/IntegrationGuide.md:169:Currently, the Auth Module pushes specific login/logout audit events to the CRMS Vendor Management service. If your new subsystem also requires centralized audit logs from the Auth Module, consider refactoring the hardcoded HTTP pushes in `AuthController.php` (e.g., `pushToCrmsAuditLog`) into an event-driven architecture (like RabbitMQ or Redis Pub/Sub). This will allow any subsystem to listen to authentication events asynchronously.
+docs/SHARED_GATEWAY_GUIDE.md:47:                          Γöé /                 /serms/               /crms/        Γöé
+docs/SHARED_GATEWAY_GUIDE.md:48:                          Γöé /api/             /api/serms/           /api/crms/    Γöé
+docs/SHARED_GATEWAY_GUIDE.md:51:                          Γöé web-interface    serms_web              crms-web      Γöé
+docs/SHARED_GATEWAY_GUIDE.md:52:                          Γöé auth-service     serms_api              crms-api(s)   Γöé
+docs/SHARED_GATEWAY_GUIDE.md:352:| `/crms/` | Frontend | `crms-web:5001` | CRMS |
+docs/SHARED_GATEWAY_GUIDE.md:367:| Vendor service | `/api/crms/vendor/` | Proxies to `vendor-management:8000` |
+docs/SHARED_GATEWAY_GUIDE.md:368:| Contract service | `/api/crms/contract/` | Proxies to `contract-management:8000` |
+docs/SHARED_GATEWAY_GUIDE.md:377:- `/crms/` ΓÇö CRMS frontend
+nginx/nginx.conf:56:    # CRMS frontend at /crms/
+nginx/nginx.conf:57:    location /crms/ {
+nginx/nginx.conf:58:        set $upstream_crms http://crms-web:5001;
+nginx/nginx.conf:59:        proxy_pass $upstream_crms;
+nginx/nginx.conf:76:    # CRMS Generic API Gateway
+web-interface/src/components/HomePage.vue:192:        window.location.href = '/crms/admin/dashboard'
+web-interface/src/components/HomePage.vue:194:        window.location.href = '/crms/manager/dashboard'
+web-interface/src/components/HomePage.vue:196:        window.location.href = '/crms/sales/dashboard'
+web-interface/src/views/HomePage.vue:193:        window.location.href = `/crms/auth/callback?state=/crms/admin/dashboard`
+web-interface/src/views/HomePage.vue:195:        window.location.href = `/crms/auth/callback?state=/crms/manager/dashboard`
+web-interface/src/views/HomePage.vue:197:        window.location.href = `/crms/auth/callback?state=/crms/sales/dashboard`

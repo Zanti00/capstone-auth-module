@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Contracts\EmailNotificationServiceInterface;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Department;
-use App\Mail\WelcomeEmail;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Contracts\SessionRepositoryInterface;
 use App\Repositories\Contracts\AuditLogRepositoryInterface;
@@ -14,7 +14,6 @@ use App\Repositories\Contracts\DepartmentRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -29,6 +28,7 @@ class UserService
     protected RoleRepositoryInterface $roleRepo;
     protected DepartmentRepositoryInterface $departmentRepo;
     protected InternalAuditService $internalAuditService;
+    protected EmailNotificationServiceInterface $emailNotificationService;
 
     public function __construct(
         UserRepositoryInterface $userRepo,
@@ -36,7 +36,8 @@ class UserService
         AuditLogRepositoryInterface $auditLogRepo,
         RoleRepositoryInterface $roleRepo,
         DepartmentRepositoryInterface $departmentRepo,
-        InternalAuditService $internalAuditService
+        InternalAuditService $internalAuditService,
+        EmailNotificationServiceInterface $emailNotificationService
     ) {
         $this->userRepo = $userRepo;
         $this->sessionRepo = $sessionRepo;
@@ -44,6 +45,7 @@ class UserService
         $this->roleRepo = $roleRepo;
         $this->departmentRepo = $departmentRepo;
         $this->internalAuditService = $internalAuditService;
+        $this->emailNotificationService = $emailNotificationService;
     }
 
     public function paginateUsers(array $filters, int $perPage, ?User $actor): LengthAwarePaginator
@@ -56,7 +58,7 @@ class UserService
         ]);
 
         if ($actor && $actor->profile?->role?->name !== 'IT Admin' && $actor->profile?->role?->name !== 'Super Admin') {
-            if ($actor->profile?->department?->name === 'Finance' && $actor->profile?->role?->name === 'Admin') {
+            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
                 $filters['department_limit_id'] = $actor->profile->department_id;
             } else {
                 Log::info('paginateUsers forcing empty', ['actor_role' => $actor?->profile?->role?->name]);
@@ -102,11 +104,11 @@ class UserService
         $isITAdmin = in_array($actorRole, ['IT Admin', 'Super Admin']);
 
         if (!$isITAdmin) {
-            if ($actorDept === 'Finance' && $actorRole === 'Admin') {
-                $financeDept = $this->departmentRepo->findByName('Finance');
+            if ($actorDept === 'Sales & Marketing' && $actorRole === 'Admin') {
+                $financeDept = $this->departmentRepo->findByName('Sales & Marketing');
                 if ($financeDept && $validated['department_id'] != $financeDept->id) {
                     throw new HttpResponseException(
-                        response()->json(['message' => 'You can only create accounts for the Finance department.'], 403)
+                        response()->json(['message' => 'You can only create accounts for the Sales & Marketing department.'], 403)
                     );
                 }
 
@@ -131,7 +133,7 @@ class UserService
 
             $user = $this->userRepo->create([
                 'email' => $validated['email'],
-                'is_active' => true,
+                'is_active' => false,
             ]);
 
             $this->userRepo->createProfile($user->id, [
@@ -171,7 +173,19 @@ class UserService
                 Log::warning('Failed to invalidate cache after user creation', ['error' => $e->getMessage()]);
             }
 
-            Mail::to($user->email)->queue(new WelcomeEmail($user->email, $tempPassword));
+            $this->emailNotificationService->queueNotification(
+                'welcome_temp_password',
+                $user->email,
+                [
+                    'email' => $user->email,
+                    'first_name' => $validated['first_name'],
+                    'temporary_password' => $tempPassword,
+                    'login_url' => rtrim((string) config('app.frontend_url', 'http://localhost:5173'), '/') . '/login',
+                    'app_name' => config('app.name'),
+                ],
+                $user->id,
+                'Welcome to ' . config('app.name')
+            );
 
             return $user->load(['profile.role', 'profile.department']);
 

@@ -166,4 +166,4 @@ This will return only the permissions assigned to the logged-in user that belong
 
 ## 6. Audit Logging (Optional)
 
-Currently, the Auth Module pushes specific login/logout audit events to the CRMS Vendor Management service. If your new subsystem also requires centralized audit logs from the Auth Module, consider refactoring the hardcoded HTTP pushes in `AuthController.php` (e.g., `pushToCrmsAuditLog`) into an event-driven architecture (like RabbitMQ or Redis Pub/Sub). This will allow any subsystem to listen to authentication events asynchronously.
+Currently, the Auth Module pushes specific login/logout audit events to the CMS Vendor Management service. If your new subsystem also requires centralized audit logs from the Auth Module, consider refactoring the hardcoded HTTP pushes in `AuthController.php` (e.g., `pushToCmsAuditLog`) into an event-driven architecture (like RabbitMQ or Redis Pub/Sub). This will allow any subsystem to listen to authentication events asynchronously.

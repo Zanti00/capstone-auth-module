@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\UrlDecodeBearerToken::class);
         $middleware->alias([
             'active.session' => \App\Http\Middleware\CheckActiveSession::class,
+            'password.change.session' => \App\Http\Middleware\AuthenticatePasswordChangeSession::class,
             'verified' => \App\Http\Middleware\EnsureEmailVerified::class,
             'decrypt.rsa' => \App\Http\Middleware\DecryptRsaPayload::class,
             'require.password.change' => \App\Http\Middleware\RequirePasswordChange::class,
