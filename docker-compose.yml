@@ -42,7 +42,7 @@ services:
       - BREVO_TEMPLATE_EMAIL_VERIFICATION=${BREVO_TEMPLATE_EMAIL_VERIFICATION}
       - BREVO_TEMPLATE_PASSWORD_CHANGED_CONFIRMATION=${BREVO_TEMPLATE_PASSWORD_CHANGED_CONFIRMATION}
     depends_on:
-      db:
+      auth-db:
         condition: service_healthy
       auth-redis:
         condition: service_healthy
@@ -93,7 +93,7 @@ services:
       - VENDOR_MANAGEMENT_URL=${VENDOR_MANAGEMENT_URL}
       - INTERNAL_ENCRYPTION_KEY=${INTERNAL_ENCRYPTION_KEY}
     depends_on:
-      db:
+      auth-db:
         condition: service_healthy
       auth-redis:
         condition: service_healthy
@@ -131,7 +131,7 @@ services:
     networks:
       - shared-capstone-network
 
-  db:
+  auth-db:
     image: mysql:8.0
     container_name: mysql-db
     command: --skip-name-resolve

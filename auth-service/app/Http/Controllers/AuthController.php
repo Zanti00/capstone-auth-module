@@ -91,8 +91,8 @@ class AuthController extends Controller
         $result = $this->authService->attemptLogin(
             $request->email,
             $request->password,
-            $request->ip(),
-            $request->userAgent()
+            $request->ip() ?? '127.0.0.1',
+            $request->userAgent() ?? ''
         );
 
         $response = response()->json([
@@ -139,8 +139,8 @@ class AuthController extends Controller
         try {
             $result = $this->authService->refreshSession(
                 $refreshTokenPlain,
-                $request->ip(),
-                $request->userAgent()
+                $request->ip() ?? '127.0.0.1',
+                $request->userAgent() ?? ''
             );
 
             return response()->json([
@@ -166,7 +166,13 @@ class AuthController extends Controller
         $user = $request->user();
         $sessionId = $request->cookie('session_id') ?: $request->header('X-Session-ID');
 
-        $this->authService->logout($refreshTokenPlain, $sessionId, $user, $request->ip(), $request->userAgent());
+        $this->authService->logout(
+            $refreshTokenPlain,
+            $sessionId,
+            $user,
+            $request->ip() ?? '127.0.0.1',
+            $request->userAgent() ?? ''
+        );
 
         return response()->json(['message' => 'Successfully logged out.'])
             ->withCookie(CookieHelper::forgetAuthCookie('access_token'))

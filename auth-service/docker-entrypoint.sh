@@ -2,7 +2,7 @@
 set -e
 
 # Use environment variables with fallbacks
-DB_HOST=${DB_HOST:-db}
+DB_HOST=${DB_HOST:-mysql-db}
 DB_PORT=${DB_PORT:-3306}
 
 # Wait for database to be ready
