@@ -85,6 +85,9 @@ class AuthController extends Controller
         $user = $result['user_model'];
 
         return response()->json([
+            'access_token' => $result['access_token'],
+            'refresh_token' => $result['refresh_token'],
+            'session_id' => $result['session_id'],
             'user' => $result['user'],
             'permissions' => $result['permissions']
         ])->withCookie(
@@ -98,7 +101,7 @@ class AuthController extends Controller
 
     public function refresh(Request $request)
     {
-        $refreshTokenPlain = $request->cookie('refresh_token');
+        $refreshTokenPlain = $request->cookie('refresh_token') ?: $request->input('refresh_token');
 
         if (!$refreshTokenPlain) {
             return response()->json(['message' => 'Refresh token missing.'], 401);
@@ -112,6 +115,8 @@ class AuthController extends Controller
             );
 
             return response()->json([
+                'access_token' => $result['access_token'],
+                'refresh_token' => $result['refresh_token'],
                 'user' => $result['user']
             ])->withCookie(
                 CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)

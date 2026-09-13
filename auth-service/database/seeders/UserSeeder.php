@@ -16,6 +16,13 @@ class UserSeeder extends Seeder
     {
         $usersToSeed = [
             [
+                'email' => 'superadmin@example.com',
+                'first_name' => 'Super',
+                'last_name' => 'Admin',
+                'role_name' => 'Super Admin',
+                'department_name' => 'IT'
+            ],
+            [
                 'email' => 'admin@example.com',
                 'first_name' => 'System',
                 'last_name' => 'Administrator',
@@ -76,7 +83,7 @@ class UserSeeder extends Seeder
                 'first_name' => 'Customer',
                 'last_name' => 'Support',
                 'role_name' => 'Employee',
-                'department_name' => 'Customer Support'
+                'department_name' => 'Customer Service'
             ],
         ];
 
