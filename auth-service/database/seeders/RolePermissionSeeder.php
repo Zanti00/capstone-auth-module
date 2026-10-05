@@ -25,6 +25,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Finance',             'description' => 'Finance staff access'],
             ['name' => 'Accountant',          'description' => 'Accounting staff access'],
             ['name' => 'Employee',            'description' => 'Regular staff access'],
+            ['name' => 'Engineer',            'description' => 'Field and Service Engineer access'],
         ];
 
         // insertOrIgnore: skips duplicates instead of crashing
@@ -208,7 +209,7 @@ class RolePermissionSeeder extends Seeder
             $role->permissions()->syncWithoutDetaching($prsValidationPerms->pluck('id'));
         }
 
-        foreach (\App\Models\Role::whereIn('name', ['Sales', 'Employee', 'Finance', 'Finance Employee', 'Accountant'])->get() as $role) {
+        foreach (\App\Models\Role::whereIn('name', ['Sales', 'Employee', 'Finance', 'Finance Employee', 'Accountant', 'Engineer'])->get() as $role) {
             $role->permissions()->syncWithoutDetaching($prsBasicPerms->pluck('id'));
         }
 
