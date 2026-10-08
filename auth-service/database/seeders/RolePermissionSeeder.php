@@ -16,14 +16,14 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-            ['name' => 'Super Admin',         'description' => 'System wide access'],
-            ['name' => 'IT Admin',            'description' => 'IT infrastructure and user management'],
-            ['name' => 'Admin',               'description' => 'General administration'],
-            ['name' => 'Manager',             'description' => 'Management of specific department'],
-            ['name' => 'Sales',               'description' => 'Sales staff access'],
-            ['name' => 'Supervisor',          'description' => 'Department supervisor access'],
-            ['name' => 'Finance',             'description' => 'Finance staff access'],
-            ['name' => 'Employee',            'description' => 'Regular staff access'],
+            ['name' => 'Super Admin',         'description' => 'System wide access',                       'nav_group' => 'admin'],
+            ['name' => 'IT Admin',            'description' => 'IT infrastructure and user management',    'nav_group' => 'admin'],
+            ['name' => 'Admin',               'description' => 'General administration',                   'nav_group' => 'admin'],
+            ['name' => 'Manager',             'description' => 'Management of specific department',        'nav_group' => 'manager'],
+            ['name' => 'Sales',               'description' => 'Sales staff access',                        'nav_group' => 'staff'],
+            ['name' => 'Supervisor',          'description' => 'Department supervisor access',              'nav_group' => 'manager'],
+            ['name' => 'Finance',             'description' => 'Finance staff access',                      'nav_group' => 'staff'],
+            ['name' => 'Employee',            'description' => 'Regular staff access',                      'nav_group' => 'staff'],
         ];
 
         // insertOrIgnore: skips duplicates instead of crashing

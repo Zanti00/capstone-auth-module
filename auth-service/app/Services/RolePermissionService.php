@@ -171,6 +171,19 @@ class RolePermissionService
 
         $role->refresh();
 
+        // Track renames so downstream consumers (e.g. the CMS Visual Contract
+        // Workflow Tracker) can show an "edited" indicator plus the previous
+        // name on hover for steps that acted on this role before the rename.
+        if (array_key_exists('name', $data) && $oldName !== $role->name) {
+            \App\Models\RoleNameHistory::create([
+                'role_id'       => $role->id,
+                'previous_name' => $oldName,
+                'new_name'      => $role->name,
+                'changed_by'    => $actor?->id,
+                'changed_at'    => now(),
+            ]);
+        }
+
         $this->auditLogRepo->log(
             $actor ? $actor->id : null,
             'ROLE_UPDATED',

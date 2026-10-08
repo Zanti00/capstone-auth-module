@@ -16,6 +16,8 @@ Route::post('/internal/verify-token', \App\Http\Controllers\InternalVerifyTokenC
 Route::get('/internal/users/{id}', [\App\Http\Controllers\InternalUserController::class, 'show']);
 Route::get('/internal/users-by-roles', [\App\Http\Controllers\InternalUserController::class, 'getUsersByRoles']);
 Route::get('/internal/users-batch', [\App\Http\Controllers\InternalUserController::class, 'getUsersBatch']);
+Route::get('/internal/roles/{id}/active-holders', [\App\Http\Controllers\InternalRoleController::class, 'activeHolders']);
+Route::get('/internal/roles/{id}/describe', [\App\Http\Controllers\InternalRoleController::class, 'describe']);
 
 Route::middleware(['auth:api', 'active.session'])->group(function () {
     // Routes that must be accessible even if password change is required
@@ -31,6 +33,13 @@ Route::middleware(['auth:api', 'active.session'])->group(function () {
         });
         Route::get('/me/permissions', [AuthController::class, 'permissions']);
         Route::put('/me/profile', [AuthController::class, 'updateProfile']);
+
+        // "My Delegations" — any user holding a role they can delegate
+        // manages their own delegations here (see RolePermissionService
+        // Phase 1 decisions: delegators act only on their own behalf).
+        Route::get('/me/delegations', [App\Http\Controllers\DelegationController::class, 'myDelegations']);
+        Route::post('/me/delegations', [App\Http\Controllers\DelegationController::class, 'store']);
+        Route::delete('/me/delegations/{id}', [App\Http\Controllers\DelegationController::class, 'revoke']);
     });
 });
 
@@ -54,6 +63,11 @@ Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can
     Route::post('permissions/{id}/roles', [App\Http\Controllers\PermissionController::class, 'syncRoles']);
     Route::get('roles/{id}/permissions', [App\Http\Controllers\RoleController::class, 'permissions']);
     Route::post('roles/{id}/permissions', [App\Http\Controllers\RoleController::class, 'syncPermissions']);
+
+    // Delegation oversight — IT/System admins can view all delegations and
+    // revoke any of them, but do not create delegations on others' behalf.
+    Route::get('delegations', [App\Http\Controllers\DelegationController::class, 'index']);
+    Route::delete('delegations/{id}', [App\Http\Controllers\DelegationController::class, 'adminRevoke']);
 });
 
 Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can:manage-departments'])->prefix('admin')->group(function () {
