@@ -181,6 +181,12 @@ class AuthService
                 'address' => $user->profile->address,
                 'role' => $user->profile->role ? [
                     'name' => $user->profile->role->name,
+                    // nav_group drives CMS's route gating (admin/manager/
+                    // staff) — must be included here or a freshly logged-in
+                    // user has no nav_group until refreshPermissions() runs,
+                    // which blocks every route and can loop (see CMS
+                    // router's not-found fallback).
+                    'nav_group' => $user->profile->role->nav_group,
                 ] : null,
                 'department' => $user->profile->department ? [
                     'name' => $user->profile->department->name,
