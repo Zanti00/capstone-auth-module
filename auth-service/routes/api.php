@@ -9,6 +9,17 @@ Route::post('/login', [AuthController::class, 'login'])->middleware(['throttle:a
 Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware(['throttle:auth', 'decrypt.rsa:password,password_confirmation']);
+
+// Password change is the self-activation path for inactive (not yet
+// activated) accounts — changePassword() flips is_active on success — so
+// it must NOT sit behind the active.session check (which would 401 with
+// "User account is inactive" before the controller ever runs). auth:api
+// still identifies the caller, and the current password is verified
+// inside the service. No privilege change: callers can only ever touch
+// their own account.
+Route::middleware(['auth:api'])->group(function () {
+    Route::post('/me/password', [AuthController::class, 'changePassword'])->middleware('decrypt.rsa:current_password,new_password,new_password_confirmation');
+});
 Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 
 Route::get('/internal/audit-logs', [\App\Http\Controllers\InternalAuditLogController::class, 'index']);
@@ -22,7 +33,6 @@ Route::get('/internal/roles/{id}/describe', [\App\Http\Controllers\InternalRoleC
 Route::middleware(['auth:api', 'active.session'])->group(function () {
     // Routes that must be accessible even if password change is required
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/me/password', [AuthController::class, 'changePassword'])->middleware('decrypt.rsa:current_password,new_password,new_password_confirmation');
 
     // Routes that require password change
     Route::middleware('require.password.change')->group(function () {
@@ -53,6 +63,9 @@ Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can
 });
 
 Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can:manage-roles'])->prefix('admin')->group(function () {
+    // Static segment BEFORE apiResource: otherwise 'access-systems' would
+    // be captured as roles/{role}.
+    Route::get('roles/access-systems', [App\Http\Controllers\RoleController::class, 'accessSystems']);
     Route::apiResource('roles', App\Http\Controllers\RoleController::class);
     Route::get('roles/{id}/users', [App\Http\Controllers\RoleController::class, 'users']);
     Route::patch('users/{id}/role', [App\Http\Controllers\RoleController::class, 'assignRole']);

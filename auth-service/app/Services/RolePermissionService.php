@@ -91,18 +91,160 @@ class RolePermissionService
 
     public function getPaginatedRoles(int $perPage = 15, ?string $search = null, ?User $actor = null): LengthAwarePaginator
     {
-        $allowedNames = null;
+        $allowedNames = $this->visibleRoleNamesForActor($actor);
 
-        if ($actor && !in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin'])) {
-            if ($actor->profile?->department?->name === 'Sales & Marketing' && $actor->profile?->role?->name === 'Admin') {
-                $allowedNames = ['Manager', 'Employee'];
-            } else {
-                // Return empty paginator
-                return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage);
-            }
+        if (is_array($allowedNames) && empty($allowedNames)) {
+            // Return empty paginator
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage);
         }
 
         return $this->roleRepo->paginate($perPage, $search, $allowedNames);
+    }
+
+    /**
+     * Role names visible to $actor in role listings. Null = unrestricted
+     * (IT/Super Admin, or internal calls with no actor). Sales & Marketing
+     * Admins see the legacy base names PLUS any custom role currently
+     * holding at least one cms-system permission — so granting a role
+     * (e.g. CEO) CMS access in the Role Builder automatically surfaces it
+     * in CMS-side surfaces (User Management tabs, workflow Role Picker)
+     * without code changes. Everyone else sees nothing.
+     *
+     * Platform admin roles (Super Admin / IT Admin / Admin) stay
+     * IT-governed and are never delegated here: the sales admin can SEE
+     * their users via tabs but cannot open or modify the roles
+     * themselves (see isRoleAllowedForActor + the access-systems
+     * endpoint, which includes Admin for tab parity).
+     *
+     * @return string[]|null
+     */
+    private function platformAdmin(?User $actor): bool
+    {
+        return (bool) $actor && in_array($actor->profile?->role?->name, ['IT Admin', 'Super Admin']);
+    }
+
+    private function salesMarketingAdmin(?User $actor): bool
+    {
+        return (bool) $actor
+            && $actor->profile?->role?->name === 'Admin'
+            && $actor->profile?->department?->name === 'Sales & Marketing';
+    }
+
+    /**
+     * Role names visible to $actor in role listings. Null = unrestricted
+     * (IT/Super Admin, or internal calls with no actor). Sales & Marketing
+     * Admins see the legacy base names PLUS any custom role currently
+     * holding at least one cms-system permission — so granting a role
+     * (e.g. CEO) CMS access in the Role Builder automatically surfaces it
+     * in CMS-side surfaces (User Management tabs, workflow Role Picker)
+     * without code changes. Everyone else sees nothing.
+     *
+     * Platform admin roles (Super Admin / IT Admin / Admin) stay
+     * IT-governed and are never delegated through listings.
+     *
+     * @return string[]|null
+     */
+    private function visibleRoleNamesForActor(?User $actor): ?array
+    {
+        if (!$actor || $this->platformAdmin($actor)) {
+            return null;
+        }
+
+        if ($this->salesMarketingAdmin($actor)) {
+            return array_values(array_unique(array_merge(
+                ['Manager', 'Employee'],
+                $this->cmsHoldingRoleNames(['Super Admin', 'IT Admin', 'Admin'])
+            )));
+        }
+
+        return [];
+    }
+
+    /**
+     * Distinct names of non-deleted roles holding >= 1 cms-system
+     * permission, minus any excluded names. Single join query (no N+1).
+     *
+     * @param string[] $exclude
+     * @return string[]
+     */
+    private function cmsHoldingRoleNames(array $exclude = []): array
+    {
+        $query = DB::table('roles')
+            ->join('role_permission', 'role_permission.role_id', '=', 'roles.id')
+            ->join('permissions', 'permissions.id', '=', 'role_permission.permission_id')
+            ->where('permissions.system', 'cms')
+            ->whereNull('roles.deleted_at');
+
+        if (!empty($exclude)) {
+            $query->whereNotIn('roles.name', $exclude);
+        }
+
+        return $query->distinct()->pluck('roles.name')->all();
+    }
+
+    /**
+     * Whether a single role currently holds >= 1 cms-system permission.
+     */
+    private function roleHoldsCmsPermission(int $roleId): bool
+    {
+        return DB::table('role_permission')
+            ->join('permissions', 'permissions.id', '=', 'role_permission.permission_id')
+            ->where('role_permission.role_id', $roleId)
+            ->where('permissions.system', 'cms')
+            ->exists();
+    }
+
+    /**
+     * Every non-deleted role with its permission systems, scoped to what
+     * $actor may see (same rule as listings). Consumed by CMS to render
+     * dynamic role tabs: a tab appears for each role whose systems include
+     * 'cms'. Deliberately uncached (one cheap join query) so a grant in
+     * the Role Builder is visible immediately.
+     */
+    public function getRolesAccessSystems(?User $actor = null): array
+    {
+        // Tab parity rule: same visibility as listings, except the Admin
+        // role itself is included so CMS keeps its historic Admin tab
+        // (filtering user rows — read-only). Admin stays IT-managed:
+        // isRoleAllowedForActor still refuses open/sync on it, and infra
+        // roles (Super/IT Admin) are hidden everywhere for scoped actors.
+        if (!$actor || $this->platformAdmin($actor)) {
+            $allowedNames = null;
+        } elseif ($this->salesMarketingAdmin($actor)) {
+            $allowedNames = array_values(array_unique(array_merge(
+                ['Manager', 'Employee'],
+                $this->cmsHoldingRoleNames(['Super Admin', 'IT Admin'])
+            )));
+        } else {
+            return [];
+        }
+
+        if (is_array($allowedNames) && empty($allowedNames)) {
+            return [];
+        }
+
+        $query = DB::table('roles')
+            ->leftJoin('role_permission', 'role_permission.role_id', '=', 'roles.id')
+            ->leftJoin('permissions', 'permissions.id', '=', 'role_permission.permission_id')
+            ->whereNull('roles.deleted_at')
+            ->select('roles.id', 'roles.name')
+            ->selectRaw("GROUP_CONCAT(DISTINCT permissions.system SEPARATOR ',') as systems")
+            ->groupBy('roles.id', 'roles.name')
+            ->orderBy('roles.id');
+
+        if (is_array($allowedNames)) {
+            $query->whereIn('roles.name', $allowedNames);
+        }
+
+        return $query->get()
+            ->map(fn ($row) => [
+                'id' => (int) $row->id,
+                'name' => $row->name,
+                'systems' => $row->systems !== null && $row->systems !== ''
+                    ? explode(',', (string) $row->systems)
+                    : [],
+            ])
+            ->all();
     }
 
     public function getPaginatedPermissions(int $perPage = 15, ?string $search = null): LengthAwarePaginator
@@ -141,7 +283,7 @@ class RolePermissionService
         if (!$role) {
             throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(Role::class, $id);
         }
-        if ($actor && !$this->isRoleAllowedForActor($role, $actor)) {
+        if ($actor && !$this->isRoleVisibleForActor($role, $actor)) {
             throw new HttpResponseException(
                 response()->json(['message' => 'Unauthorized to access this role.'], 403)
             );
@@ -243,7 +385,7 @@ class RolePermissionService
         if (!$role) {
             throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(Role::class, $roleId);
         }
-        if ($actor && !$this->isRoleAllowedForActor($role, $actor)) {
+        if ($actor && !$this->isRoleVisibleForActor($role, $actor)) {
             throw new HttpResponseException(
                 response()->json(['message' => 'Unauthorized to view users for this role.'], 403)
             );
@@ -330,7 +472,7 @@ class RolePermissionService
         if (!$role) {
             throw (new \Illuminate\Database\Eloquent\ModelNotFoundException)->setModel(Role::class, $roleId);
         }
-        if ($actor && !$this->isRoleAllowedForActor($role, $actor)) {
+        if ($actor && !$this->isRoleVisibleForActor($role, $actor)) {
             throw new HttpResponseException(
                 response()->json(['message' => 'Unauthorized to view permissions for this role.'], 403)
             );
@@ -352,6 +494,10 @@ class RolePermissionService
         }
 
         $this->roleRepo->syncPermissions($roleId, $permissionIds);
+
+        // Role↔permission mapping changed: clear cached role listings so
+        // dynamic CMS visibility (cms-holding roles) updates immediately.
+        $this->invalidateRoleCaches();
 
         // Invalidate permission cache for all users with this role
         $userIds = User::whereHas('profile', function($q) use ($roleId) {
@@ -605,7 +751,46 @@ class RolePermissionService
 
         if ($actorRole === 'Admin' && $actorDept === 'Sales & Marketing') {
             $roleName = $role instanceof Role ? $role->name : $this->roleRepo->findById($role)?->name;
-            return in_array($roleName, ['Manager', 'Employee']);
+            if (in_array($roleName, ['Manager', 'Employee'])) {
+                return true;
+            }
+            // Platform admin roles stay IT-governed even when they hold
+            // cms permissions — otherwise this would be self-escalation.
+            if (in_array($roleName, ['Super Admin', 'IT Admin', 'Admin'])) {
+                return false;
+            }
+            // Dynamic CMS visibility: a custom role granted any cms
+            // permission becomes manageable here too (mirrors listings).
+            $roleId = $role instanceof Role ? $role->id : (int) $role;
+            return $roleId > 0 && $this->roleHoldsCmsPermission($roleId);
+        }
+
+        return false;
+    }
+
+    /**
+     * Read visibility: everything the manage guard allows, plus any role
+     * holding cms permissions (platform roles included). Reading a role's
+     * detail, user list, or permission list cannot escalate privilege; it
+     * lets scoped admins validate workflows containing e.g. an Admin step
+     * and lets CMS resolve live role names. Writes (assign/sync) stay
+     * behind isRoleAllowedForActor. Used by getRole/getRoleUsers/
+     * getRolePermissions.
+     */
+    protected function isRoleVisibleForActor(Role|int $role, ?User $actor): bool
+    {
+        if ($this->isRoleAllowedForActor($role, $actor)) {
+            return true;
+        }
+
+        if (!$actor) {
+            return false;
+        }
+
+        if ($actor->profile?->role?->name === 'Admin'
+            && $actor->profile?->department?->name === 'Sales & Marketing') {
+            $roleId = $role instanceof Role ? $role->id : (int) $role;
+            return $roleId > 0 && $this->roleHoldsCmsPermission($roleId);
         }
 
         return false;
