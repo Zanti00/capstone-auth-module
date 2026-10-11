@@ -108,7 +108,16 @@ const router = useRouter()
 const { logout, fetchCurrentUser } = useAuth()
 
 // Load user from localStorage
-const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+function getStoredUser(): Record<string, any> {
+  const raw = localStorage.getItem('user')
+  if (!raw || raw === 'undefined' || raw === 'null') return {}
+  try {
+    return JSON.parse(raw) ?? {}
+  } catch {
+    return {}
+  }
+}
+const user = ref<any>(getStoredUser())
 
 const userName = computed(() => {
   if (user.value.profile) {

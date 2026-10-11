@@ -15,7 +15,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $engineerRole = Role::firstOrCreate(
+        // Order-independent: the Role model carries the SoftDeletes global
+        // scope, but the deleted_at column is added by a later migration
+        // (10_08_000003). Bypass scopes so a fresh migrate works regardless
+        // of migration order.
+        $engineerRole = Role::withoutGlobalScopes()->firstOrCreate(
             ['name' => 'Engineer'],
             ['description' => 'Field and Service Engineer access']
         );
@@ -67,7 +71,7 @@ return new class extends Migration
                 ]
             );
 
-            $role = Role::where('name', $data['role'])->first() ?? $engineerRole;
+            $role = Role::withoutGlobalScopes()->where('name', $data['role'])->first() ?? $engineerRole;
             $department = Department::firstOrCreate(['name' => $data['department']]);
 
             UserProfile::updateOrCreate(

@@ -6,7 +6,14 @@ export function hasAuthStatusCookie(): boolean {
 }
 
 export function hasLocalUser(): boolean {
-  return !!localStorage.getItem('user')
+  const raw = localStorage.getItem('user')
+  if (!raw || raw === 'undefined' || raw === 'null') return false
+  try {
+    JSON.parse(raw)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**

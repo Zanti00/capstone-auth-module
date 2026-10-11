@@ -27,9 +27,18 @@ export function useAuth() {
 
     try {
       const response = await authService.login(credentials)
-      const { user } = response.data
+      const data = response.data
+      const candidate = data?.user ?? data
+      const user =
+        candidate && typeof candidate === 'object' && ('id' in candidate || 'email' in candidate)
+          ? candidate
+          : null
 
-      localStorage.setItem('user', JSON.stringify(user))
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('user')
+      }
 
       return { success: true, user }
     } catch (error: any) {
@@ -75,15 +84,25 @@ export function useAuth() {
   }
 
   // ── Fetch Current User ─────────────────────────────────────────────────────
-  // Hydrates the user from the authoritative backend (/api/user). The backend
-  // wraps the user object under a `user` key ({ user: {...} }), matching the
-  // login response shape. Never throws — failures are returned as result objects.
+  // Hydrates the user from the authoritative backend (/api/user).
+  // Shape varies by route definition: AuthController::me wraps as
+  // { user: {...} } while the closure route returns the user object
+  // directly. Accept both so a shape change can't wipe local state.
   const fetchCurrentUser = async (): Promise<FetchCurrentUserResult> => {
     try {
       const response = await authService.fetchMe()
-      const user = response.data.user
+      const data = response.data
+      const candidate = data?.user ?? data
+      const user =
+        candidate && typeof candidate === 'object' && ('id' in candidate || 'email' in candidate)
+          ? candidate
+          : null
 
-      localStorage.setItem('user', JSON.stringify(user))
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('user')
+      }
 
       return { success: true, user }
     } catch (error: any) {
@@ -221,11 +240,15 @@ export function useAuth() {
       
       // Update local storage user flag
       const userStr = localStorage.getItem('user')
-      if (userStr) {
-        const user = JSON.parse(userStr)
-        user.is_password_changed = true
-        user.is_active = true
-        localStorage.setItem('user', JSON.stringify(user))
+      if (userStr && userStr !== 'undefined') {
+        try {
+          const user = JSON.parse(userStr)
+          user.is_password_changed = true
+          user.is_active = true
+          localStorage.setItem('user', JSON.stringify(user))
+        } catch {
+          // Corrupt snapshot — ignore, server is source of truth.
+        }
       }
 
       return {
