@@ -25,6 +25,7 @@ class UserSeeder extends Seeder
             ['Sales Marketing', null, 'Manager', 'sales-marketing-manager@example.com', 'Sales & Marketing', 'Manager'],
             ['Sales Marketing', null, 'Officer', 'sales-marketing-officer@example.com', 'Sales & Marketing', 'Employee'],
             ['General', null, 'Employee', 'employee@example.com', 'Operations', 'Employee'],
+            ['Chief', null, 'Executive', 'ceo@example.com', 'Executive', 'CEO'],
 
             // PRS seed accounts. Auth Module is the login source of truth; PRS projects these locally after login.
             ['Sofia', null, 'Montenegro', 'superadmin@sbsi.com', 'Executive', 'Super Admin'],

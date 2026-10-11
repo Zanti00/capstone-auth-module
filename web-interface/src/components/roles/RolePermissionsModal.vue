@@ -42,6 +42,16 @@ const togglePermission = (permId: number) => {
   }
   internalSelectedIds.value = current
 }
+
+const safePermissions = computed<Permission[]>(() => {
+  if (Array.isArray(props.allPermissions)) {
+    return props.allPermissions.filter((p): p is Permission => !!p && typeof p === 'object' && p.id != null)
+  }
+  if (props.allPermissions && Array.isArray((props.allPermissions as any).data)) {
+    return (props.allPermissions as any).data.filter((p: any): p is Permission => !!p && typeof p === 'object' && p.id != null)
+  }
+  return []
+})
 </script>
 
 <template>
@@ -66,13 +76,13 @@ const togglePermission = (permId: number) => {
         </div>
 
         <div v-else class="space-y-4">
-          <div v-if="allPermissions.length === 0" class="py-8 text-center text-slate-500">
+          <div v-if="safePermissions.length === 0" class="py-8 text-center text-slate-500">
             <p>No permissions available.</p>
           </div>
 
           <div v-else class="max-h-[360px] overflow-y-auto space-y-2 pr-1">
             <label 
-              v-for="perm in allPermissions" 
+              v-for="perm in safePermissions" 
               :key="perm.id"
               class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors border border-transparent"
               :class="internalSelectedIds.includes(perm.id) ? 'bg-blue-50/50 border-blue-100' : ''"
@@ -85,8 +95,8 @@ const togglePermission = (permId: number) => {
                 <Check v-if="internalSelectedIds.includes(perm.id)" :size="12" class="text-white" />
               </div>
               <div @click.prevent="togglePermission(perm.id)">
-                <div class="text-sm font-bold text-slate-900">{{ perm.name }}</div>
-                <div class="text-xs text-slate-500">{{ perm.slug }}</div>
+                <div class="text-sm font-bold text-slate-900">{{ perm?.name }}</div>
+                <div class="text-xs text-slate-500">{{ perm?.slug }}</div>
               </div>
             </label>
           </div>

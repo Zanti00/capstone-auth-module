@@ -93,10 +93,12 @@ export function useRoles() {
 
   const fetchAllPermissions = async () => {
     try {
-      const response = await permissionService.fetchPermissions()
-      allPermissions.value = response.data
+      const response = await permissionService.fetchPermissions({ per_page: 100 })
+      const data = response.data?.data ?? response.data
+      allPermissions.value = Array.isArray(data) ? data : []
     } catch (err) {
       console.error('Failed to fetch permissions', err)
+      allPermissions.value = []
     }
   }
 
@@ -110,7 +112,8 @@ export function useRoles() {
         await fetchAllPermissions()
       }
       const res = await roleService.fetchRolePermissions(roleId)
-      selectedPermissionIds.value = res.data
+      const data = res.data?.data ?? res.data
+      selectedPermissionIds.value = Array.isArray(data) ? data : []
     } catch (err: any) {
       console.error('Failed to fetch role permissions', err)
       error.value = 'Failed to load permissions'

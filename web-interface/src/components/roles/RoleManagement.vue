@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { 
   Plus, 
   Search, 
@@ -9,7 +10,6 @@ import { useRoles } from '@/composables/useRoles'
 import type { Role } from '@/types'
 import RolesTable from './RolesTable.vue'
 import RoleFormModal from './RoleFormModal.vue'
-import RolePermissionsModal from './RolePermissionsModal.vue'
 import RoleUsersModal from './RoleUsersModal.vue'
 
 const {
@@ -82,23 +82,11 @@ const handleDelete = async (id: number) => {
   }
 }
 
-// ── Permission Sync Modal ────────────────────────────────────────────────────
-const showPermModal = ref(false)
-const selectedRole = ref<Role | null>(null)
+const router = useRouter()
 
-const openPermModal = async (role: Role) => {
-  selectedRole.value = role
-  showPermModal.value = true
-  await fetchRolePermissions(role.id)
-}
-
-
-const handleSavePermissions = async () => {
-  if (!selectedRole.value) return
-  const success = await syncRolePermissions(selectedRole.value.id)
-  if (success) {
-    showPermModal.value = false
-  }
+// ── Permission Management Navigation ─────────────────────────────────────────
+const openPermModal = (role: Role) => {
+  router.push({ name: 'admin-role-permissions', params: { id: role.id } })
 }
 
 // ── Users Modal ──────────────────────────────────────────────────────────────
@@ -185,18 +173,6 @@ watch(filters, () => {
       :submitting="submitting"
       :error="error"
       @submit="handleSubmit"
-    />
-
-    <!-- Permission Sync Modal -->
-    <RolePermissionsModal
-      v-model="showPermModal"
-      :role="selectedRole"
-      :all-permissions="allPermissions"
-      v-model:selected-permission-ids="selectedPermissionIds"
-      :loading="loadingPermissions"
-      :submitting="submitting"
-      :error="error"
-      @submit="handleSavePermissions"
     />
 
     <!-- Users Modal -->

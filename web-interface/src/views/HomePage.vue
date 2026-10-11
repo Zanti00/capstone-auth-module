@@ -226,7 +226,7 @@ const openModule = (subsystemTitle: string) => {
     if (subsystemTitle === 'Contract Management') {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
-      } else if (userRole.value === 'Admin') {
+      } else if (userRole.value === 'Admin' || userRole.value === 'Super Admin' || userRole.value === 'CEO') {
         window.location.href = `/cms/auth/callback?state=/cms/admin/dashboard`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
         window.location.href = `/cms/auth/callback?state=/cms/manager/dashboard`
