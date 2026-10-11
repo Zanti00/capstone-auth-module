@@ -15,6 +15,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $usersToSeed = [
+            ['Super', null, 'Admin', 'superadmin@example.com', 'IT', 'Super Admin'],
             ['System', null, 'Administrator', 'admin@example.com', 'IT', 'IT Admin'],
             ['Department', null, 'Manager', 'manager@example.com', 'Operations', 'Manager'],
             ['Sales', null, 'Representative', 'sales@example.com', 'Operations', 'Sales'],
@@ -26,6 +27,11 @@ class UserSeeder extends Seeder
             ['Sales Marketing', null, 'Officer', 'sales-marketing-officer@example.com', 'Sales & Marketing', 'Employee'],
             ['General', null, 'Employee', 'employee@example.com', 'Operations', 'Employee'],
             ['Chief', null, 'Executive', 'ceo@example.com', 'Executive', 'CEO'],
+            ['Support', null, 'Engineer', 'engineer@example.com', 'Service', 'Employee'],
+            ['Customer', null, 'Support', 'cs@example.com', 'Customer Service', 'Employee'],
+            ['Bernadette', null, 'Tormo', 'employee1@gmail.com', 'Service', 'Engineer'],
+            ['Bernadette', null, 'Tormots', 'employee2@gmail.com', 'Service', 'Engineer'],
+            ['Bernadette', null, 'Badette', 'employee3@gmail.com', 'Service', 'Engineer'],
 
             // PRS seed accounts. Auth Module is the login source of truth; PRS projects these locally after login.
             ['Sofia', null, 'Montenegro', 'superadmin@sbsi.com', 'Executive', 'Super Admin'],
@@ -47,7 +53,7 @@ class UserSeeder extends Seeder
             ['Carlo', null, 'Mendoza', 'sales.employee3@sbsi.com', 'Sales & Marketing', 'Employee'],
             ['Lara', null, 'Aquino', 'sales.employee4@sbsi.com', 'Sales & Marketing', 'Employee'],
             ['Nico', null, 'Ramos', 'sales.employee5@sbsi.com', 'Sales & Marketing', 'Employee'],
-            ['Hannah', null, 'Flores', 'employee.accounting@sbsi.com', 'Accounting', 'Employee'],
+            ['Hannah', null, 'Flores', 'employee.accounting@sbsi.com', 'Accounting', 'Accountant'],
             ['Victor', null, 'Ocampo', 'employee.admin@sbsi.com', 'Admin', 'Employee'],
             ['Sofia', null, 'Bautista', 'employee.executive@sbsi.com', 'Executive', 'Employee'],
             ['Gabriel', null, 'Pascual', 'employee.finance@sbsi.com', 'Finance', 'Employee'],

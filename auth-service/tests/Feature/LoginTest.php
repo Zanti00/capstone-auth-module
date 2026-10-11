@@ -25,7 +25,6 @@ class LoginTest extends TestCase
             'email' => 'admin@example.com',
             'password' => 'password',
         ]);
-        $response->dump();
 
         $response->assertStatus(200)
                  ->assertJsonStructure(['user', 'permissions'])

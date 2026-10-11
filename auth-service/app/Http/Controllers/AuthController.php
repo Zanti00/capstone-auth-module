@@ -62,6 +62,19 @@ class AuthController extends Controller
         ]);
     }
 
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        return response()->json([
+            'user' => $this->authService->formatUserForFrontend($user),
+        ]);
+    }
+
     public function login(Request $request)
     {
         \Illuminate\Support\Facades\Log::info('Login Attempt Data:', $request->all());
@@ -78,29 +91,46 @@ class AuthController extends Controller
         $result = $this->authService->attemptLogin(
             $request->email,
             $request->password,
-            $request->ip(),
-            $request->userAgent()
+            $request->ip() ?? '127.0.0.1',
+            $request->userAgent() ?? ''
         );
 
-        $user = $result['user_model'];
-
-        return response()->json([
+        $response = response()->json([
+            'token' => $result['access_token'],
+            'access_token' => $result['access_token'],
+            'refresh_token' => $result['refresh_token'],
+            'session_id' => $result['session_id'],
             'user' => $result['user'],
-            'permissions' => $result['permissions']
+            'permissions' => $result['permissions'],
+            'password_change_required' => $result['password_change_required'],
         ])->withCookie(
-            CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
-        )->withCookie(
-            CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
-        )->withCookie(
             CookieHelper::makeAuthCookie('session_id', $result['session_id'], 60 * 24 * 30)
         )->withCookie(
             CookieHelper::makeStatusCookie('is_authenticated', 'true', 60 * 24 * 30)
         );
+
+        if ($result['access_token']) {
+            $response->withCookie(
+                CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
+            );
+        } else {
+            $response->withCookie(CookieHelper::forgetAuthCookie('access_token'));
+        }
+
+        if ($result['refresh_token']) {
+            $response->withCookie(
+                CookieHelper::makeAuthCookie('refresh_token', $result['refresh_token'], 60 * 24 * 30)
+            );
+        } else {
+            $response->withCookie(CookieHelper::forgetAuthCookie('refresh_token'));
+        }
+
+        return $response;
     }
 
     public function refresh(Request $request)
     {
-        $refreshTokenPlain = $request->cookie('refresh_token');
+        $refreshTokenPlain = $request->cookie('refresh_token') ?: $request->input('refresh_token');
 
         if (!$refreshTokenPlain) {
             return response()->json(['message' => 'Refresh token missing.'], 401);
@@ -109,11 +139,14 @@ class AuthController extends Controller
         try {
             $result = $this->authService->refreshSession(
                 $refreshTokenPlain,
-                $request->ip(),
-                $request->userAgent()
+                $request->ip() ?? '127.0.0.1',
+                $request->userAgent() ?? ''
             );
 
             return response()->json([
+                'token' => $result['access_token'],
+                'access_token' => $result['access_token'],
+                'refresh_token' => $result['refresh_token'],
                 'user' => $result['user']
             ])->withCookie(
                 CookieHelper::makeAuthCookie('access_token', $result['access_token'], 60 * 24)
@@ -133,7 +166,13 @@ class AuthController extends Controller
         $user = $request->user();
         $sessionId = $request->cookie('session_id') ?: $request->header('X-Session-ID');
 
-        $this->authService->logout($refreshTokenPlain, $sessionId, $user, $request->ip(), $request->userAgent());
+        $this->authService->logout(
+            $refreshTokenPlain,
+            $sessionId,
+            $user,
+            $request->ip() ?? '127.0.0.1',
+            $request->userAgent() ?? ''
+        );
 
         return response()->json(['message' => 'Successfully logged out.'])
             ->withCookie(CookieHelper::forgetAuthCookie('access_token'))

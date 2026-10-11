@@ -24,10 +24,10 @@ const form = reactive({
 const showPassword = ref(false)
 
 onMounted(() => {
-  form.token = route.query.token as string || ''
+  form.token = route.params.token as string || route.query.token as string || ''
   form.email = route.query.email as string || ''
   
-  if (!form.token || !form.email) {
+  if (!form.token) {
     generalError.value = 'Invalid or missing reset token. Please request a new link.'
   }
 })

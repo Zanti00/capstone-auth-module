@@ -22,8 +22,8 @@ class PasswordResetMail extends Mailable implements ShouldQueue
     public function __construct(string $token)
     {
         $this->token = $token;
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-        $this->url = rtrim($frontendUrl, '/') . '/reset-password/' . $token;
+        $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
+        $this->url = rtrim($frontendUrl, '/') . '/reset-password?token=' . urlencode($token);
     }
 
     /**

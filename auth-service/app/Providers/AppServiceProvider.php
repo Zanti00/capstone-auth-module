@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\EmailNotificationServiceInterface;
+use App\Services\Email\BrevoEmailNotificationService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -40,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             \Laravel\Passport\Bridge\AccessTokenRepository::class,
             \App\Passport\AccessTokenRepository::class
+        );
+        $this->app->bind(
+            EmailNotificationServiceInterface::class,
+            BrevoEmailNotificationService::class
         );
     }
 

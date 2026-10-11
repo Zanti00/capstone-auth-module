@@ -18,6 +18,8 @@ interface UserRepositoryInterface
 
     public function updateStatus(int $userId, bool $isActive): bool;
 
+    public function savePasswordCredentials(int $userId, string $passwordHash, bool $mustChangePassword = false): bool;
+
     public function updatePasswordHash(int $userId, string $passwordHash, bool $mustChangePassword = false): bool;
 
     public function createProfile(int $userId, array $data): UserProfile;

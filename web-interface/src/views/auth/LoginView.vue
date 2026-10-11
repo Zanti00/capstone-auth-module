@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
+import { isAllowedRedirectUrl } from '@/utils/redirectValidation'
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-vue-next'
 import ForgotPasswordModal from '@/views/auth/ForgotPassword.vue'
 import ToastNotification from '@/components/common/ToastNotification.vue'
@@ -52,6 +53,7 @@ const form = reactive({
 
 const showPassword = ref(false)
 const showForgot = ref(false)
+const hasRedirected = ref(false)
 
 const togglePassword = () => {
   showPassword.value = !showPassword.value
@@ -62,18 +64,31 @@ const handleLogin = async () => {
   const result = await login(form)
 
   if (result.success && result.user) {
+    // Idempotent SSO bounce: fire at most once. The full-page navigation below
+    // leaves the SPA and consumes the redirect_uri, so it cannot re-apply, but
+    // the guard also prevents any double-submit from re-triggering it.
+    if (hasRedirected.value) {
+      return
+    }
     const redirectUri = router.currentRoute.value.query.redirect_uri
-    if (redirectUri) {
-      let url = redirectUri as string
+    if (typeof redirectUri === 'string' && redirectUri && isAllowedRedirectUrl(redirectUri)) {
+      hasRedirected.value = true
+      let url = redirectUri
       const state = router.currentRoute.value.query.state
-      if (state) {
-        url += (url.includes('?') ? '&' : '?') + 'state=' + encodeURIComponent(state as string)
+      if (typeof state === 'string' && state) {
+        url += (url.includes('?') ? '&' : '?') + 'state=' + encodeURIComponent(state)
       }
       url += (url.includes('?') ? '&' : '?') + 'message=' + encodeURIComponent('Successfully logged in')
       window.location.href = url
     } else {
       router.push('/home')
     }
+  } else if (generalError.value) {
+    addToast({
+      message: generalError.value,
+      type: 'error',
+      duration: 5000
+    })
   }
 }
 </script>
@@ -105,11 +120,6 @@ const handleLogin = async () => {
 
         <h2 class="title">Welcome Back!</h2>
         <p class="subtitle">Sign in back to SBSI SSO.</p>
-
-        <!-- General / field errors -->
-        <div v-if="generalError" class="login-error" role="alert">
-          {{ generalError }}
-        </div>
 
         <!-- EMAIL -->
         <div class="input-wrapper">
@@ -296,18 +306,6 @@ const handleLogin = async () => {
   font-weight: 300;
   color: #656569;
   margin: 0 0 28px 0;
-}
-
-/* ── ERROR STATES ── */
-.login-error {
-  background: #fff5f5;
-  border: 1px solid #f8c0c0;
-  color: #c0392b;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 400;
-  margin-bottom: 14px;
 }
 
 .field-error {
