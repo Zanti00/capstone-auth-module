@@ -19,7 +19,8 @@ export interface Permission {
   id: number
   name: string
   slug: string
-  description: string
+  description?: string
+  system?: string
 }
 
 export interface UserProfile {

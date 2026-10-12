@@ -71,6 +71,11 @@ const routes = [
         component: () => import("../components/roles/RoleManagement.vue"),
       },
       {
+        path: 'roles/:id/permissions',
+        name: 'admin-role-permissions',
+        component: () => import('../components/roles/RolePermissionsPage.vue')
+      },
+      {
         path: "permissions",
         name: "admin-permission-management",
         component: () =>
@@ -231,4 +236,26 @@ router.beforeEach(async (to, _from, next) => {
   next();
 });
 
+const TITLE_MAP: Record<string, string> = {
+  landing: 'Welcome',
+  login: 'Login',
+  logout: 'Logging out',
+  'forgot-password': 'Forgot Password',
+  'reset-password': 'Reset Password',
+  'verify-email': 'Verify Email',
+  'force-change-password': 'Change Password',
+  home: 'Home',
+  'admin-user-list': 'User Management',
+  'admin-user-create': 'Create User',
+  'admin-role-management': 'Role Management',
+  'admin-permission-management': 'Permission Management',
+  'admin-department-management': 'Department Management',
+};
+
+router.afterEach((to) => {
+  const pageName = (to.name && TITLE_MAP[String(to.name)]) || 'Auth Portal';
+  document.title = `${pageName} – SBSI`;
+});
+
 export default router;
+

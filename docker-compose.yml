@@ -17,6 +17,9 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=${REDIS_HOST}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
       - PHP_CLI_SERVER_WORKERS=4
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET}
       - VENDOR_MANAGEMENT_URL=${VENDOR_MANAGEMENT_URL}
@@ -39,7 +42,7 @@ services:
       - BREVO_TEMPLATE_EMAIL_VERIFICATION=${BREVO_TEMPLATE_EMAIL_VERIFICATION}
       - BREVO_TEMPLATE_PASSWORD_CHANGED_CONFIRMATION=${BREVO_TEMPLATE_PASSWORD_CHANGED_CONFIRMATION}
     depends_on:
-      db:
+      auth-db:
         condition: service_healthy
       auth-redis:
         condition: service_healthy
@@ -65,6 +68,9 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=${REDIS_HOST}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
       - SKIP_MIGRATIONS=true
       - MAIL_MAILER=${MAIL_MAILER}
       - MAIL_SCHEME=${MAIL_SCHEME}
@@ -87,7 +93,7 @@ services:
       - VENDOR_MANAGEMENT_URL=${VENDOR_MANAGEMENT_URL}
       - INTERNAL_ENCRYPTION_KEY=${INTERNAL_ENCRYPTION_KEY}
     depends_on:
-      db:
+      auth-db:
         condition: service_healthy
       auth-redis:
         condition: service_healthy
@@ -125,9 +131,10 @@ services:
     networks:
       - shared-capstone-network
 
-  db:
+  auth-db:
     image: mysql:8.0
     container_name: mysql-db
+    command: --skip-name-resolve
     ports:
       - "33066:3306"
     environment:

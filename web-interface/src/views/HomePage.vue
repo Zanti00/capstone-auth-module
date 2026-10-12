@@ -108,7 +108,16 @@ const router = useRouter()
 const { logout, fetchCurrentUser } = useAuth()
 
 // Load user from localStorage
-const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+function getStoredUser(): Record<string, any> {
+  const raw = localStorage.getItem('user')
+  if (!raw || raw === 'undefined' || raw === 'null') return {}
+  try {
+    return JSON.parse(raw) ?? {}
+  } catch {
+    return {}
+  }
+}
+const user = ref<any>(getStoredUser())
 
 const userName = computed(() => {
   if (user.value.profile) {
@@ -237,7 +246,7 @@ const openModule = (subsystemTitle: string) => {
     if (subsystemTitle === 'Contract Management') {
       if (userRole.value === 'IT Admin') {
         router.push('/admin')
-      } else if (userRole.value === 'Admin') {
+      } else if (userRole.value === 'Admin' || userRole.value === 'Super Admin' || userRole.value === 'CEO') {
         window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/admin/dashboard`
       } else if (userRole.value === 'Manager' || userRole.value === 'Finance Manager') {
         window.location.href = `${cmsUrl}/cms/auth/callback?state=/cms/manager/dashboard`
@@ -260,6 +269,8 @@ const openModule = (subsystemTitle: string) => {
       window.location.href = `${prsUrl}/prs/auth/callback?state=/prs/app/dashboard&message=Successfully%20logged%20in`
     } else if (subsystemTitle === 'User & Access Management') {
       router.push('/admin')
+    } else if (subsystemTitle === 'Ticketing System') {
+      window.location.href = '/ticketing/'
     } else {
       alert(`${subsystemTitle} is not active in this development environment.`)
     }
