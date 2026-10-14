@@ -21,6 +21,47 @@ When working on this repository, AI agents MUST take note that changes to authen
 
 - **API Contracts & Compatibility**: Preserve API contract backward compatibility when refactoring or modifying auth/token endpoints.
 - **Cross-Subsystem Integration**: Ensure gateway, CORS, and network settings facilitate communication over the shared Docker network (`shared-capstone-network`).
+- **UI & Frontend Design Strict Guardrails**: All user interfaces, layouts, components, and views across the ecosystem MUST strictly comply with [`DESIGN.md`](./DESIGN.md) (derived from the canonical source [`docs/ONE UI DESIGN.pdf`](./docs/ONE%20UI%20DESIGN.pdf)). All AI agents and subagents (`@ui-designer`, `@frontend-developer`, etc.) MUST always consult [`DESIGN.md`](./DESIGN.md) before proposing, generating, or refactoring UI code. For live component inspection, subagents should leverage the Figma MCP server (`figma-dev-mode-mcp-server`) with project [PRS Figma](https://www.figma.com/design/ciWpnQzNBU3Zopv97v29nN/PRS?node-id=79-1078&t=vMI8xDhUbfkm564o-1).
+
+---
+
+## 🎨 UI & Frontend Design Guardrails (ONE UI Specification)
+
+All frontend engineering and user interface work must strictly follow the rules in [`DESIGN.md`](./DESIGN.md). The canonical source of truth is [`docs/ONE UI DESIGN.pdf`](./docs/ONE%20UI%20DESIGN.pdf), representing the unified ONE UI standard across all 4 industry subsystems (**CRMS**, **SERMS**, **PRS**, **TS**) and the central Auth Module SPA.
+
+### Mandatory Rules for AI Agents & Subagents
+
+1. **Always Consult `DESIGN.md` First**: Before creating, editing, or evaluating any Vue component, view, dialog, or style in `web-interface/`, AI agents and subagents MUST read and follow [`DESIGN.md`](./DESIGN.md). Never invent arbitrary colors, margins, paddings, or component styles.
+2. **Canonical Token Adherence**:
+   - Primary: `#252578` (Sidebar background, page titles, main CTA buttons, badges)
+   - Accent: `#2E85D8` (Active sidebar border, focus rings, link hovers, notification unread badge)
+   - Brand Deep: `#3A3A85` (Active sidebar link background)
+   - Brand Deep Border: `#4E4E91` (Active sidebar link background border)
+   - Page Background: `#F8F9FA` (Master body, table header backgrounds)
+   - Surface Pure White: `#FFFFFF` (Cards, modals, dropdowns, inputs, top header)
+   - Dark Slate: `#1E293B` (Metric numbers, modal titles, body typography)
+   - Muted Slate: `#8D8B8F` (Subtitles, table cells, helper copy)
+   - Avatar Circle: `#A7A7C8` | Eyebrow/Tracker: `#8086A3` | Table Headers: `#94A3B8`
+3. **Strict 8px Spacing Grid**: All margins and paddings must use 8px increments (`8px`, `16px`, `24px`, `32px`, `48px`). 4px is reserved exclusively for micro-badges. Arbitrary values (`p-[13px]`, `m-[7px]`) are strictly prohibited.
+4. **Component Primitive Architecture**:
+   - Base UI components must exclusively use **shadcn-vue** (Radix Vue headless primitives styled with Tailwind CSS).
+   - Icons must exclusively be sourced from **Lucide Icons** (`lucide-vue-next`).
+5. **Tailwind Version Pinning**: `web-interface` uses **Tailwind 3.4**. Do NOT upgrade to Tailwind v4 and do not use Tailwind v4 CSS syntax in the frontend SPA.
+6. **Bifurcated Loading States**:
+   - **Skeleton Loaders**: Mandatory for all data fetching and layout rendering (metric cards, activity tables, ranking views, schedule cards, profile shells).
+   - **Spinner Graphics (`Loader2`)**: Reserved exclusively for action triggers, button submissions, login/logout transitions, and file upload progress.
+7. **Badge Semantics**: Status badges must use **Title Case** (`Active`, `Pending`, `Approved`, `Rejected`), never all-caps. Maintain a single visual tier (bordered or low-emphasis) per table column.
+8. **Figma MCP Integration**: AI agents must utilize the local Figma MCP server (`figma-dev-mode-mcp-server`) with canonical project [PRS Figma Component Library](https://www.figma.com/design/ciWpnQzNBU3Zopv97v29nN/PRS?node-id=79-1078&t=vMI8xDhUbfkm564o-1) to inspect nodes, verify measurements, check variants, and extract exact assets whenever designing UI.
+
+### Proper Subagent Delegation for UI Tasks
+
+When coordinating UI development, AI orchestrators must route tasks to the appropriate specialized subagents:
+
+- **`@ui-designer`**: Visual design specifications, color/typography token audits, Figma MCP node inspections, interaction state definitions (hover, active, disabled), and accessibility checks.
+- **`@frontend-developer`**: Vue 3 SPA implementation (`web-interface/src/`), TypeScript typing, shadcn-vue integration, Tailwind 3.4 styling, router navigation, and reactive state management adhering to `DESIGN.md`.
+- **`@architect-reviewer`**: Gateway route integration, API contract consistency, cross-subsystem auth token validation, and SPA architectural reviews.
+- **`@code-reviewer`**: Pre-commit / pre-PR compliance audits checking that UI changes strictly adhere to `DESIGN.md` guardrails (no arbitrary styles, correct loading patterns, strict tokens).
+- **`@qa-expert`**: Form validation testing, confirmation modal workflow checks, toast auto-dismiss verification, and responsive viewport audits.
 
 ---
 
