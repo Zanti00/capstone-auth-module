@@ -82,7 +82,7 @@ class UserRepository implements UserRepositoryInterface
 
     public function paginateUsers(array $filters, int $perPage): LengthAwarePaginator
     {
-        $query = User::with(['profile.role', 'profile.department']);
+        $query = User::with(['profile.role', 'profile.department', 'profile.branch']);
 
         if (!empty($filters['search'])) {
             $search = $filters['search'];

@@ -24,7 +24,6 @@ export default defineConfig(({ mode }) => {
       allowedHosts: true,
       host: "0.0.0.0",
       port: 5000,
-      allowedHosts: true,
       watch: {
         usePolling: true,
       },

@@ -113,10 +113,10 @@ watch(filters, () => {
       
       <button 
         @click="openCreateModal"
-        class="inline-flex items-center gap-2 bg-gradient-to-r from-[#252578] to-[#3b82f6] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg transition-all active:scale-95"
+        class="inline-flex items-center gap-2 bg-[#252578] hover:bg-[#1e1e66] text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all active:scale-98 cursor-pointer"
       >
         <Plus :size="18" />
-        Create New Department
+        <span>Create New Department</span>
       </button>
     </div>
 

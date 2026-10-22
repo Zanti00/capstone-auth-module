@@ -4,13 +4,14 @@
 
 import { ref } from 'vue'
 import { userService } from '@/services/userService'
-import type { User, Role, Department, PaginationMeta, CreateUserPayload } from '@/types'
+import type { User, Role, Department, Branch, PaginationMeta, CreateUserPayload } from '@/types'
 
 export function useUsers() {
   // ── List State ─────────────────────────────────────────────────────────────
   const users = ref<User[]>([])
   const roles = ref<Role[]>([])
   const departments = ref<Department[]>([])
+  const branches = ref<Branch[]>([])
   const isLoading = ref(true)
   const pagination = ref<PaginationMeta>({
     current_page: 1,
@@ -20,6 +21,7 @@ export function useUsers() {
   const filters = ref({
     role_id: '',
     department_id: '',
+    branch_id: '',
     is_active: '',
     search: '',
     per_page: 15,
@@ -44,12 +46,14 @@ export function useUsers() {
 
   const fetchMetadata = async () => {
     try {
-      const [rolesRes, deptsRes] = await Promise.all([
+      const [rolesRes, deptsRes, branchesRes] = await Promise.all([
         userService.fetchRoleOptions(),
         userService.fetchDepartmentOptions(),
+        userService.fetchBranchOptions(),
       ])
       roles.value = rolesRes.data
       departments.value = deptsRes.data
+      branches.value = branchesRes.data
     } catch (err) {
       console.error('Failed to fetch metadata', err)
     }
@@ -64,14 +68,16 @@ export function useUsers() {
 
   const fetchCreateFormData = async () => {
     try {
-      const [rolesRes, deptsRes] = await Promise.all([
+      const [rolesRes, deptsRes, branchesRes] = await Promise.all([
         userService.fetchRoleOptions(),
         userService.fetchDepartmentOptions(),
+        userService.fetchBranchOptions(),
       ])
       roles.value = rolesRes.data
       departments.value = deptsRes.data
+      branches.value = branchesRes.data
     } catch {
-      generalError.value = 'Failed to load roles or departments.'
+      generalError.value = 'Failed to load roles, departments, or branches.'
     } finally {
       isLoadingData.value = false
     }
@@ -148,6 +154,7 @@ export function useUsers() {
     users,
     roles,
     departments,
+    branches,
     isLoading,
     pagination,
     filters,

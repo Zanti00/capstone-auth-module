@@ -9,6 +9,7 @@ export interface UserListParams {
   search?: string
   role_id?: string
   department_id?: string
+  branch_id?: string
   is_active?: string
   per_page?: number
 }
@@ -28,6 +29,10 @@ export const userService = {
 
   fetchDepartmentOptions() {
     return api.get('/api/admin/department-options')
+  },
+
+  fetchBranchOptions() {
+    return api.get('/api/admin/branch-options')
   },
 
   assignRole(userId: number, roleId: number | string) {

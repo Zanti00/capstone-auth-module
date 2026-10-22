@@ -10,7 +10,8 @@ import {
   User as UserIcon,
   X,
   MoreVertical,
-  Check
+  Check,
+  MapPin
 } from 'lucide-vue-next'
 import type { User, PaginationMeta } from '@/types'
 
@@ -75,19 +76,20 @@ const handleOpenConfirmModal = (user: User) => {
             <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">User</th>
             <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Role</th>
             <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Department</th>
+            <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Branch</th>
             <th class="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
             <th class="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           <tr v-if="isLoading">
-            <td colspan="5" class="px-6 py-12 text-center">
+            <td colspan="6" class="px-6 py-12 text-center">
               <Loader2 class="h-8 w-8 text-slate-300 animate-spin mx-auto" />
               <p class="text-slate-400 text-sm mt-2">Loading users...</p>
             </td>
           </tr>
           <tr v-else-if="users.length === 0">
-            <td colspan="5" class="px-6 py-12 text-center">
+            <td colspan="6" class="px-6 py-12 text-center">
               <UserIcon class="h-12 w-12 text-slate-200 mx-auto mb-3" />
               <p class="text-slate-500 font-medium">No users found match your criteria.</p>
             </td>
@@ -119,6 +121,14 @@ const handleOpenConfirmModal = (user: User) => {
               <div class="flex items-center gap-2">
                 <Building2 :size="16" class="text-slate-400" />
                 {{ user.profile?.department?.name || 'N/A' }}
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">
+              <div class="flex items-center gap-2">
+                <MapPin :size="16" class="text-slate-400" />
+                <span class="truncate max-w-[160px]" :title="user.profile?.branch?.name">
+                  {{ user.profile?.branch?.name || '—' }}
+                </span>
               </div>
             </td>
             <td class="px-6 py-4">

@@ -7,8 +7,9 @@
         
         <div class="flex items-center space-x-12">
           <div class="flex items-center space-x-3">
+            <img src="/images/SBSI-logo.png" alt="Scientific Biotech Specialties, Inc." class="h-9 object-contain" />
+            <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
             <span class="text-xl font-bold text-primary tracking-tight">SBSI Unified Operations Center</span>
-
           </div>
         </div>
 
@@ -217,16 +218,16 @@ const subsystems = computed(() => {
   ]
 
   if (isItAdmin(user.value)) {
-    base.push({
+    base.unshift({
       title: 'User & Access Management',
-      desc: 'Manage users, assign roles, define permissions, and configure departments for the entire organization.',
+      desc: 'Centralized identity authority, role-based access control (RBAC), fine-grained permission matrices, and departmental structure governance.',
       icon: ShieldCheck,
-      iconBg: 'bg-red-500 shadow-red-500/20',
+      iconBg: 'bg-[#252578] shadow-[#252578]/25',
       iconColor: 'text-white',
       badge: 'Administration',
-      badgeClass: 'text-red-500/40 bg-red-500/5',
-      bgHover: 'group-hover:bg-red-500/10',
-      bgBase: 'bg-red-500/5'
+      badgeClass: 'text-[#252578] bg-[#252578]/10 border-[#252578]/20',
+      bgHover: 'group-hover:bg-[#252578]/10',
+      bgBase: 'bg-[#252578]/5'
     })
   }
 

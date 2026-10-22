@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { 
   Loader2, 
   Shield, 
@@ -9,7 +9,8 @@ import {
   Key,
   AlertCircle,
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  MoreVertical
 } from 'lucide-vue-next'
 import type { Role, PaginationMeta } from '@/types'
 
@@ -33,6 +34,26 @@ const emit = defineEmits<{
 const internalPerPage = computed({
   get: () => props.perPage,
   set: (value) => emit('update:perPage', value)
+})
+
+const activeDropdownRoleId = ref<number | null>(null)
+const toggleDropdown = (id: number) => {
+  activeDropdownRoleId.value = activeDropdownRoleId.value === id ? null : id
+}
+
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.dropdown-trigger') && !target.closest('.dropdown-menu')) {
+    activeDropdownRoleId.value = null
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -89,29 +110,48 @@ const internalPerPage = computed({
                 {{ role.users_count ?? 0 }} Users
               </button>
             </td>
-            <td class="px-6 py-4 text-right">
-              <div class="flex items-center justify-end gap-2">
+            <td class="px-6 py-4 text-right relative">
+              <div class="flex justify-end items-center relative">
+                <!-- 3-Dots Action Button -->
                 <button 
-                  @click="emit('open-perm-modal', role)"
-                  class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                  title="Manage Permissions"
+                  @click.stop="toggleDropdown(role.id)"
+                  class="dropdown-trigger p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-all cursor-pointer"
+                  title="Actions"
                 >
-                  <Key :size="16" />
+                  <MoreVertical :size="18" />
                 </button>
-                <button 
-                  @click="emit('open-edit-modal', role)"
-                  class="p-2 text-slate-400 hover:text-[#252578] hover:bg-blue-50 rounded-lg transition-all"
-                  title="Edit Role"
+
+                <!-- Dropdown Menu -->
+                <div 
+                  v-if="activeDropdownRoleId === role.id"
+                  class="dropdown-menu absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 flex flex-col gap-1 min-w-[170px] text-left animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                  <Edit2 :size="16" />
-                </button>
-                <button 
-                  @click="emit('delete', role.id)"
-                  class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                  title="Delete Role"
-                >
-                  <Trash2 :size="16" />
-                </button>
+                  <button 
+                    @click.stop="activeDropdownRoleId = null; emit('open-edit-modal', role)"
+                    class="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Edit2 :size="14" class="text-slate-400" />
+                    <span>Edit Role</span>
+                  </button>
+
+                  <button 
+                    @click.stop="activeDropdownRoleId = null; emit('open-perm-modal', role)"
+                    class="w-full px-3 py-2 hover:bg-amber-50 text-slate-700 hover:text-amber-800 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Key :size="14" class="text-amber-500" />
+                    <span>Edit Permissions</span>
+                  </button>
+
+                  <div class="h-px bg-slate-100 my-0.5"></div>
+
+                  <button 
+                    @click.stop="activeDropdownRoleId = null; emit('delete', role.id)"
+                    class="w-full px-3 py-2 hover:bg-red-50 text-red-600 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Trash2 :size="14" class="text-red-500" />
+                    <span>Delete Role</span>
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
