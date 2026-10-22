@@ -85,12 +85,32 @@
           </p>
         </div>
 
-        <!-- Slide Presentation Carousel Viewport (compacted, 10s auto-rotate, no next/prev arrows) -->
+        <!-- Slide Presentation Carousel Viewport (auto-rotate with hover pause & navigation arrows) -->
         <div 
           class="lp-carousel-card" 
-          @mouseenter="pauseSlideTimer" 
-          @mouseleave="resumeSlideTimer"
+          @mouseenter="handleMouseEnter" 
+          @mouseleave="handleMouseLeave"
         >
+          <!-- Left Navigation Arrow (revealed on hover) -->
+          <button 
+            type="button"
+            class="lp-carousel-arrow lp-carousel-arrow-prev" 
+            aria-label="Previous system slide"
+            @click="handlePrev"
+          >
+            <ChevronLeft :size="20" />
+          </button>
+
+          <!-- Right Navigation Arrow (revealed on hover) -->
+          <button 
+            type="button"
+            class="lp-carousel-arrow lp-carousel-arrow-next" 
+            aria-label="Next system slide"
+            @click="handleNext"
+          >
+            <ChevronRight :size="20" />
+          </button>
+
           <!-- Current Slide Transition Frame -->
           <transition name="slide-fade" mode="out-in">
             <div 
@@ -416,6 +436,8 @@ import {
   Lock,
   Sparkles,
   ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-vue-next';
 
 // ==========================================
@@ -682,26 +704,48 @@ function setupScrollObserver() {
 // ==========================================
 
 const currentSlideIndex = ref(0);
+const isCarouselHovered = ref(false);
 let slideTimer: any = null;
 
 const activeSlide = computed(() => {
   return coreSystems[currentSlideIndex.value] || coreSystems[0];
 });
 
+function prevSlide() {
+  currentSlideIndex.value = (currentSlideIndex.value - 1 + coreSystems.length) % coreSystems.length;
+}
+
 function nextSlide() {
   currentSlideIndex.value = (currentSlideIndex.value + 1) % coreSystems.length;
 }
 
-function setSlide(index: number) {
-  currentSlideIndex.value = index;
+function handlePrev() {
+  prevSlide();
+  if (!isCarouselHovered.value) {
+    startSlideTimer();
+  }
 }
 
-// 10 seconds interval as requested
+function handleNext() {
+  nextSlide();
+  if (!isCarouselHovered.value) {
+    startSlideTimer();
+  }
+}
+
+function setSlide(index: number) {
+  currentSlideIndex.value = index;
+  if (!isCarouselHovered.value) {
+    startSlideTimer();
+  }
+}
+
+// 5 seconds interval for smooth, noticeable auto-rotation
 function startSlideTimer() {
   stopSlideTimer();
   slideTimer = setInterval(() => {
     nextSlide();
-  }, 10000);
+  }, 5000);
 }
 
 function stopSlideTimer() {
@@ -711,11 +755,13 @@ function stopSlideTimer() {
   }
 }
 
-function pauseSlideTimer() {
+function handleMouseEnter() {
+  isCarouselHovered.value = true;
   stopSlideTimer();
 }
 
-function resumeSlideTimer() {
+function handleMouseLeave() {
+  isCarouselHovered.value = false;
   startSlideTimer();
 }
 
@@ -1043,9 +1089,106 @@ onUnmounted(() => {
   background: #f8f9fa;
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  padding: 28px 36px;
+  padding: 28px 48px;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Carousel Navigation Arrows (Revealed on Hover)
+   -------------------------------------------------------------------------- */
+.lp-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lp-carousel-arrow-prev {
+  left: 14px;
+  transform: translate(-8px, -50%);
+}
+
+.lp-carousel-arrow-next {
+  right: 14px;
+  transform: translate(8px, -50%);
+}
+
+/* Reveal arrows when carousel card is hovered */
+.lp-carousel-card:hover .lp-carousel-arrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lp-carousel-card:hover .lp-carousel-arrow-prev {
+  transform: translate(0, -50%);
+}
+
+.lp-carousel-card:hover .lp-carousel-arrow-next {
+  transform: translate(0, -50%);
+}
+
+/* Arrow button hover & active states */
+.lp-carousel-arrow:hover {
+  background: #252578 !important;
+  border-color: #252578 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(37, 37, 120, 0.25);
+}
+
+.lp-carousel-card:hover .lp-carousel-arrow-prev:hover {
+  transform: translate(0, -50%) scale(1.08);
+}
+
+.lp-carousel-card:hover .lp-carousel-arrow-next:hover {
+  transform: translate(0, -50%) scale(1.08);
+}
+
+.lp-carousel-arrow:active {
+  transform: translate(0, -50%) scale(0.95) !important;
+}
+
+/* Touch devices support */
+@media (hover: none) {
+  .lp-carousel-arrow {
+    opacity: 0.85;
+    pointer-events: auto;
+  }
+  .lp-carousel-arrow-prev {
+    transform: translate(0, -50%);
+  }
+  .lp-carousel-arrow-next {
+    transform: translate(0, -50%);
+  }
+}
+
+/* Fluid Slide Transitions */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .lp-slide-content {
@@ -1763,6 +1906,19 @@ onUnmounted(() => {
 
   .lp-carousel-card {
     padding: 24px 18px;
+  }
+
+  .lp-carousel-arrow {
+    width: 32px;
+    height: 32px;
+  }
+
+  .lp-carousel-arrow-prev {
+    left: 6px;
+  }
+
+  .lp-carousel-arrow-next {
+    right: 6px;
   }
 
   .lp-capabilities-grid {

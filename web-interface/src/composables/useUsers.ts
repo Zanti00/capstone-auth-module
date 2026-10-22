@@ -46,14 +46,14 @@ export function useUsers() {
 
   const fetchMetadata = async () => {
     try {
-      const [rolesRes, deptsRes, branchesRes] = await Promise.all([
+      const [rolesRes, deptsRes, branchesRes] = await Promise.allSettled([
         userService.fetchRoleOptions(),
         userService.fetchDepartmentOptions(),
         userService.fetchBranchOptions(),
       ])
-      roles.value = rolesRes.data
-      departments.value = deptsRes.data
-      branches.value = branchesRes.data
+      if (rolesRes.status === 'fulfilled') roles.value = rolesRes.value.data
+      if (deptsRes.status === 'fulfilled') departments.value = deptsRes.value.data
+      if (branchesRes.status === 'fulfilled') branches.value = branchesRes.value.data
     } catch (err) {
       console.error('Failed to fetch metadata', err)
     }
@@ -68,14 +68,14 @@ export function useUsers() {
 
   const fetchCreateFormData = async () => {
     try {
-      const [rolesRes, deptsRes, branchesRes] = await Promise.all([
+      const [rolesRes, deptsRes, branchesRes] = await Promise.allSettled([
         userService.fetchRoleOptions(),
         userService.fetchDepartmentOptions(),
         userService.fetchBranchOptions(),
       ])
-      roles.value = rolesRes.data
-      departments.value = deptsRes.data
-      branches.value = branchesRes.data
+      if (rolesRes.status === 'fulfilled') roles.value = rolesRes.value.data
+      if (deptsRes.status === 'fulfilled') departments.value = deptsRes.value.data
+      if (branchesRes.status === 'fulfilled') branches.value = branchesRes.value.data
     } catch {
       generalError.value = 'Failed to load roles, departments, or branches.'
     } finally {

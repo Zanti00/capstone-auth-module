@@ -440,4 +440,14 @@ onUnmounted(() => {
   font-size: 13px;
   letter-spacing: -0.01em;
 }
+
+/* Hide scrollbar for Chrome, Safari, Edge, Opera */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 </style>
