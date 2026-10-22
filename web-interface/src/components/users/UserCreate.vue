@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { reactive, onMounted } from 'vue'
 import { useUsers } from '@/composables/useUsers'
-import { Loader2, UserPlus, CheckCircle2, AlertCircle } from 'lucide-vue-next'
+import { Loader2, UserPlus, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-vue-next'
 
 const {
   roles,
   departments,
+  branches,
   isLoadingData,
   isSubmitting,
   isSuccess,
@@ -20,7 +21,8 @@ const form = reactive({
   last_name: '',
   email: '',
   role_id: '',
-  department_id: ''
+  department_id: '',
+  branch_id: ''
 })
 
 onMounted(fetchCreateFormData)
@@ -36,13 +38,22 @@ const handleSubmit = async () => {
 
 <template>
   <div class="space-y-8 animate-in fade-in duration-500">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Create New User</h1>
-        <p class="text-slate-500 mt-1">Onboard a new employee by creating their account.</p>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <router-link 
+          to="/admin/users"
+          class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-all"
+        >
+          <ArrowLeft :size="16" />
+          <span>Back to Users</span>
+        </router-link>
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Create New User</h1>
+          <p class="text-slate-500 mt-0.5 text-xs">Onboard a new employee by creating their account.</p>
+        </div>
       </div>
-      <div class="w-12 h-12 bg-gradient-to-r from-[#252578] to-[#3b82f6] rounded-2xl flex items-center justify-center text-white shadow-lg">
-        <UserPlus :size="24" />
+      <div class="w-11 h-11 bg-[#252578] rounded-xl flex items-center justify-center text-white shadow-md">
+        <UserPlus :size="20" />
       </div>
     </div>
 
@@ -135,6 +146,21 @@ const handleSubmit = async () => {
           <p v-if="errors.department_id" class="text-[10px] font-bold text-red-500 uppercase tracking-wider">{{ errors.department_id[0] }}</p>
         </div>
 
+        <div class="space-y-2">
+          <label class="text-sm font-semibold text-slate-700">Branch Location</label>
+          <select 
+            v-model="form.branch_id"
+            class="flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all appearance-none cursor-pointer"
+            :class="{ 'border-red-300 bg-red-50': errors.branch_id }"
+          >
+            <option value="">Select branch assignment (Optional)</option>
+            <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+              {{ branch.name }}
+            </option>
+          </select>
+          <p v-if="errors.branch_id" class="text-[10px] font-bold text-red-500 uppercase tracking-wider">{{ errors.branch_id[0] }}</p>
+        </div>
+
         <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 mt-4">
           <div class="flex gap-3">
             <AlertCircle class="text-slate-400 h-5 w-5 shrink-0 mt-0.5" />
@@ -159,10 +185,10 @@ const handleSubmit = async () => {
           <button 
             type="submit" 
             :disabled="isSubmitting"
-            class="w-full h-12 bg-gradient-to-r from-[#252578] to-[#3b82f6] text-white rounded-xl text-sm font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            class="w-full h-11 bg-[#252578] hover:bg-[#1e1e66] text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             <Loader2 v-if="isSubmitting" class="animate-spin h-5 w-5" />
-            {{ isSubmitting ? 'Creating Account...' : 'Create Account' }}
+            <span>{{ isSubmitting ? 'Creating Account...' : 'Create Account' }}</span>
           </button>
         </div>
       </div>

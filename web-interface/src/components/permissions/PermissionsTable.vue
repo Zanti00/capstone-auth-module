@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { 
   Loader2, 
   Key, 
@@ -8,7 +8,8 @@ import {
   Edit2, 
   Trash2, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  MoreVertical
 } from 'lucide-vue-next'
 import type { Permission, PaginationMeta } from '@/types'
 
@@ -30,6 +31,26 @@ const emit = defineEmits<{
 const internalPerPage = computed({
   get: () => props.perPage,
   set: (value) => emit('update:perPage', value)
+})
+
+const activeDropdownPermId = ref<number | null>(null)
+const toggleDropdown = (id: number) => {
+  activeDropdownPermId.value = activeDropdownPermId.value === id ? null : id
+}
+
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.dropdown-trigger') && !target.closest('.dropdown-menu')) {
+    activeDropdownPermId.value = null
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -78,29 +99,48 @@ const internalPerPage = computed({
             <td class="px-6 py-4">
               <p class="text-sm text-slate-500 line-clamp-1 max-w-xs">{{ permission.description || 'No description' }}</p>
             </td>
-            <td class="px-6 py-4 text-right">
-              <div class="flex items-center justify-end gap-2">
+            <td class="px-6 py-4 text-right relative">
+              <div class="flex justify-end items-center relative">
+                <!-- 3-Dots Action Button -->
                 <button 
-                  @click="emit('open-assign-modal', permission)"
-                  class="p-2 text-slate-400 hover:text-[#252578] hover:bg-blue-50 rounded-lg transition-all"
-                  title="Assign to Roles"
+                  @click.stop="toggleDropdown(permission.id)"
+                  class="dropdown-trigger p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-all cursor-pointer"
+                  title="Actions"
                 >
-                  <Users :size="16" />
+                  <MoreVertical :size="18" />
                 </button>
-                <button 
-                  @click="emit('open-edit-modal', permission)"
-                  class="p-2 text-slate-400 hover:text-[#252578] hover:bg-blue-50 rounded-lg transition-all"
-                  title="Edit Permission"
+
+                <!-- Dropdown Menu -->
+                <div 
+                  v-if="activeDropdownPermId === permission.id"
+                  class="dropdown-menu absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 flex flex-col gap-1 min-w-[170px] text-left animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                  <Edit2 :size="16" />
-                </button>
-                <button 
-                  @click="emit('delete', permission.id)"
-                  class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                  title="Delete Permission"
-                >
-                  <Trash2 :size="16" />
-                </button>
+                  <button 
+                    @click.stop="activeDropdownPermId = null; emit('open-assign-modal', permission)"
+                    class="w-full px-3 py-2 hover:bg-blue-50 text-slate-700 hover:text-[#252578] rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Users :size="14" class="text-slate-400" />
+                    <span>Assign to Roles</span>
+                  </button>
+
+                  <button 
+                    @click.stop="activeDropdownPermId = null; emit('open-edit-modal', permission)"
+                    class="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Edit2 :size="14" class="text-slate-400" />
+                    <span>Edit Permission</span>
+                  </button>
+
+                  <div class="h-px bg-slate-100 my-0.5"></div>
+
+                  <button 
+                    @click.stop="activeDropdownPermId = null; emit('delete', permission.id)"
+                    class="w-full px-3 py-2 hover:bg-red-50 text-red-600 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Trash2 :size="14" class="text-red-500" />
+                    <span>Delete Permission</span>
+                  </button>
+                </div>
               </div>
             </td>
           </tr>

@@ -52,9 +52,13 @@ const routes = [
   {
     path: "/admin",
     component: () => import("../layouts/AdminLayout.vue"),
-    redirect: "/admin/users",
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
+      {
+        path: "",
+        name: "admin-dashboard",
+        component: () => import("../components/dashboard/AdminDashboard.vue"),
+      },
       {
         path: "users",
         name: "admin-user-list",
@@ -86,6 +90,18 @@ const routes = [
         name: "admin-department-management",
         component: () =>
           import("../components/departments/DepartmentManagement.vue"),
+      },
+      {
+        path: "branches",
+        name: "admin-branch-management",
+        component: () =>
+          import("../components/branches/BranchManagement.vue"),
+      },
+      {
+        path: "audit-trail",
+        name: "admin-audit-trail",
+        component: () =>
+          import("../components/audit/AuditTrailManagement.vue"),
       },
     ],
   },

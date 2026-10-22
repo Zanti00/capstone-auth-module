@@ -15,8 +15,6 @@ import {
   Banknote,
   Users,
   Ticket,
-  Lock,
-  Sparkles,
   Layers
 } from 'lucide-vue-next'
 import { roleService } from '@/services/roleService'

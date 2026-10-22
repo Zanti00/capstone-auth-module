@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { 
   Loader2,
   Building2,
@@ -7,7 +7,8 @@ import {
   Edit2,
   Trash2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MoreVertical
 } from 'lucide-vue-next'
 import type { Department } from '@/types'
 
@@ -29,6 +30,26 @@ const emit = defineEmits<{
 const localPerPage = computed({
   get: () => props.perPage,
   set: (val) => emit('update:perPage', val)
+})
+
+const activeDropdownDeptId = ref<number | null>(null)
+const toggleDropdown = (id: number) => {
+  activeDropdownDeptId.value = activeDropdownDeptId.value === id ? null : id
+}
+
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.dropdown-trigger') && !target.closest('.dropdown-menu')) {
+    activeDropdownDeptId.value = null
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -84,22 +105,48 @@ const localPerPage = computed({
                 {{ dept.users_count }} Users
               </button>
             </td>
-            <td class="px-6 py-4 text-right">
-              <div class="flex items-center justify-end gap-2">
+            <td class="px-6 py-4 text-right relative">
+              <div class="flex justify-end items-center relative">
+                <!-- 3-Dots Action Button -->
                 <button 
-                  @click="emit('open-edit-modal', dept)"
-                  class="p-2 text-slate-400 hover:text-[#252578] hover:bg-blue-50 rounded-lg transition-all"
-                  title="Edit Department"
+                  @click.stop="toggleDropdown(dept.id)"
+                  class="dropdown-trigger p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-900 transition-all cursor-pointer"
+                  title="Actions"
                 >
-                  <Edit2 :size="16" />
+                  <MoreVertical :size="18" />
                 </button>
-                <button 
-                  @click="emit('delete', dept.id)"
-                  class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                  title="Delete Department"
+
+                <!-- Dropdown Menu -->
+                <div 
+                  v-if="activeDropdownDeptId === dept.id"
+                  class="dropdown-menu absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 flex flex-col gap-1 min-w-[170px] text-left animate-in fade-in slide-in-from-top-1 duration-150"
                 >
-                  <Trash2 :size="16" />
-                </button>
+                  <button 
+                    @click.stop="activeDropdownDeptId = null; emit('open-user-modal', dept)"
+                    class="w-full px-3 py-2 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <UsersIcon :size="14" class="text-slate-400" />
+                    <span>View Users</span>
+                  </button>
+
+                  <button 
+                    @click.stop="activeDropdownDeptId = null; emit('open-edit-modal', dept)"
+                    class="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Edit2 :size="14" class="text-slate-400" />
+                    <span>Edit Department</span>
+                  </button>
+
+                  <div class="h-px bg-slate-100 my-0.5"></div>
+
+                  <button 
+                    @click.stop="activeDropdownDeptId = null; emit('delete', dept.id)"
+                    class="w-full px-3 py-2 hover:bg-red-50 text-red-600 rounded-lg transition-all flex items-center gap-2.5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Trash2 :size="14" class="text-red-500" />
+                    <span>Delete Department</span>
+                  </button>
+                </div>
               </div>
             </td>
           </tr>

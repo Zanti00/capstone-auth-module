@@ -15,6 +15,15 @@ export interface Department {
   users_count?: number
 }
 
+export interface Branch {
+  id: number
+  name: string
+  address?: string
+  users_count?: number
+  created_at?: string
+  updated_at?: string
+}
+
 export interface Permission {
   id: number
   name: string
@@ -25,9 +34,11 @@ export interface Permission {
 
 export interface UserProfile {
   first_name: string
+  middle_name?: string
   last_name: string
   role?: Role
   department?: Department
+  branch?: Branch
 }
 
 export interface User {
@@ -50,10 +61,12 @@ export interface LoginCredentials {
 
 export interface CreateUserPayload {
   first_name: string
+  middle_name?: string
   last_name: string
   email: string
   role_id: string
   department_id: string
+  branch_id?: string
 }
 
 export interface ResetPasswordPayload {

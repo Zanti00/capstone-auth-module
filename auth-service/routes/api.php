@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/encryption-key', [AuthController::class, 'getEncryptionKey']);
 Route::post('/webhooks/brevo', BrevoWebhookController::class);
-Route::post('/login', [AuthController::class, 'login'])->middleware(['throttle:auth', 'decrypt.rsa:password']);
+Route::post('/login', [AuthController::class, 'login'])->name('login')->middleware(['throttle:auth', 'decrypt.rsa:password']);
 Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
@@ -58,12 +58,15 @@ Route::middleware(['auth:api', 'active.session'])->group(function () {
 });
 
 Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can:manage-users'])->prefix('admin')->group(function () {
+    Route::get('/dashboard-stats', [App\Http\Controllers\AdminDashboardController::class, 'stats']);
+    Route::get('/audit-logs', [App\Http\Controllers\AdminAuditLogController::class, 'index']);
     Route::get('/users', [App\Http\Controllers\AdminUserController::class, 'index']);
     Route::post('/users', [App\Http\Controllers\AdminUserController::class, 'store']);
     Route::get('/users/{id}', [App\Http\Controllers\AdminUserController::class, 'show']);
     Route::patch('/users/{id}/status', [App\Http\Controllers\AdminUserController::class, 'toggleStatus']);
     Route::get('/department-options', [App\Http\Controllers\AdminUserController::class, 'getDepartments']);
     Route::get('/role-options', [App\Http\Controllers\AdminUserController::class, 'getRoles']);
+    Route::get('/branch-options', [App\Http\Controllers\BranchController::class, 'options']);
 });
 
 Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can:manage-roles'])->prefix('admin')->group(function () {
@@ -91,6 +94,7 @@ Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can
     Route::apiResource('departments', App\Http\Controllers\DepartmentController::class);
     Route::get('departments/{id}/users', [App\Http\Controllers\DepartmentController::class, 'users']);
     Route::patch('users/{id}/department', [App\Http\Controllers\DepartmentController::class, 'assignDepartment']);
+    Route::apiResource('branches', App\Http\Controllers\BranchController::class);
 });
 
 Route::middleware(['auth:api', 'active.session', 'require.password.change'])->group(function () {

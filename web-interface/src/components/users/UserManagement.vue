@@ -14,6 +14,7 @@ const {
   users,
   roles,
   departments,
+  branches,
   isLoading,
   pagination,
   filters,
@@ -88,9 +89,9 @@ const handleConfirmStatusToggle = async (password: string) => {
       </div>
       <router-link 
         to="/admin/users/create"
-        class="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-gradient-to-r from-[#252578] to-[#3b82f6] text-white text-sm font-semibold hover:shadow-lg transition-all"
+        class="inline-flex items-center justify-center h-10 px-5 rounded-lg bg-[#252578] hover:bg-[#1e1e66] text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all active:scale-98"
       >
-        Add New User
+        <span>+ Add New User</span>
       </router-link>
     </div>
 
@@ -135,6 +136,14 @@ const handleConfirmStatusToggle = async (password: string) => {
           >
             <option value="">All Departments</option>
             <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+          </select>
+
+          <select 
+            v-model="filters.branch_id"
+            class="flex-1 h-10 px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all cursor-pointer"
+          >
+            <option value="">All Branches</option>
+            <option v-for="branch in branches" :key="branch.id" :value="branch.id">{{ branch.name }}</option>
           </select>
 
           <select 
