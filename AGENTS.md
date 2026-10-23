@@ -41,8 +41,8 @@ All frontend engineering and user interface work must strictly follow the rules 
    - Surface Pure White: `#FFFFFF` (Cards, modals, dropdowns, inputs, top header)
    - Dark Slate: `#1E293B` (Metric numbers, modal titles, body typography)
    - Muted Slate: `#8D8B8F` (Subtitles, table cells, helper copy)
-   - Avatar Circle: `#A7A7C8` | Eyebrow/Tracker: `#8086A3` | Table Headers: `#94A3B8`
-3. **Strict 8px Spacing Grid**: All margins and paddings must use 8px increments (`8px`, `16px`, `24px`, `32px`, `48px`). 4px is reserved exclusively for micro-badges. Arbitrary values (`p-[13px]`, `m-[7px]`) are strictly prohibited.
+   - Avatar Circle Fill: `#252578` (Navy) with `#A7A7C8` Header Border Ring | Eyebrow/Tracker: `#8086A3` | Table Headers: `#94A3B8`
+3. **Strict 8px Spacing Grid**: All margins and paddings must use 8px increments (`8px`, `16px`, `24px`, `32px`, `48px`). 4px is reserved exclusively for micro-badges. Arbitrary values (`p-[13px]`, `m-[7px]`) are strictly prohibited. The top navigation header is standardized at exactly **`72px`** (`h-[72px]` / `h-18`, 9 × 8px) across all group subsystems (**CRMS**, **SERMS**, **PRS**, **TS**), aligning directly with the 72px sidebar brand lockup.
 4. **Component Primitive Architecture**:
    - Base UI components must exclusively use **shadcn-vue** (Radix Vue headless primitives styled with Tailwind CSS).
    - Icons must exclusively be sourced from **Lucide Icons** (`lucide-vue-next`).
