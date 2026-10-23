@@ -17,6 +17,7 @@ import {
 } from 'lucide-vue-next'
 import sidebarLogo from '@/assets/logo.png'
 import { useAuth } from '@/composables/useAuth'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -83,11 +84,24 @@ const closeUserMenu = () => {
   isUserMenuOpen.value = false
 }
 
-// ── Logout Handler ────────────────────────────────────────────────────────────
-const handleLogout = async () => {
+// ── Logout Handlers & Confirmation Modal ──────────────────────────────────────
+const showLogoutConfirmModal = ref(false)
+const isLoggingOut = ref(false)
+
+const handleLogout = () => {
   closeUserMenu()
-  await logout()
-  router.push({ name: 'login', query: { message: 'Successfully logged out.' } })
+  showLogoutConfirmModal.value = true
+}
+
+const confirmLogout = async () => {
+  try {
+    isLoggingOut.value = true
+    await logout()
+    showLogoutConfirmModal.value = false
+    router.push({ name: 'login', query: { message: 'Successfully logged out.' } })
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 
 // ── Idle Logout Logic (2 hours) ───────────────────────────────────────────────
@@ -402,6 +416,19 @@ onUnmounted(() => {
         </router-view>
       </main>
     </div>
+
+    <!-- Global Logout Confirmation Modal -->
+    <ConfirmModal
+      :show="showLogoutConfirmModal"
+      title="Confirm Logout"
+      description="Are you sure you want to end your active session? You will be redirected to the sign-in screen."
+      confirmLabel="Log Out"
+      cancelLabel="Cancel"
+      variant="logout"
+      :isSubmitting="isLoggingOut"
+      @close="showLogoutConfirmModal = false"
+      @confirm="confirmLogout"
+    />
   </div>
 </template>
 
