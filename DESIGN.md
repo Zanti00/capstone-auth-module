@@ -117,7 +117,8 @@ Every color used across templates, components, and stylesheets must strictly ali
 | | Border | `#6EE7B7` | `border-emerald-300` |
 
 ### Specialized Contextual Colors
-- **Header Avatar Circle:** `#A7A7C8` (Circular badge with white bold initials).
+- **Avatar Circle Fill:** `#252578` (Brand Primary Navy — standardized solid background for circular avatar badges across the system, displaying white bold initials).
+- **Header Avatar Accent Ring/Border:** `#A7A7C8` (Light lavender/slate border ring enclosing the circular avatar badge specifically in the top header).
 - **Portal Eyebrows & Subtitles:** `#8086A3` (Category labels, portal tracker, subtitle scope text).
 - **Table Column Headers:** `#94A3B8` (Uppercase labels with expanded letter tracking).
 - **Primary Button Hover:** `#2F2F8E` (`10%` lighter translucent shift).
@@ -178,6 +179,7 @@ The layout strictly adheres to an **8px grid system**. Arbitrary margins and pad
 - **Z-Index:** Fixed viewport height, `z-30`.
 
 #### Header & Brand Lockup
+- **Standard Height:** Exactly **`72px`** (`h-[72px]` or `h-18`, 9 × 8px grid), perfectly matching the top header height for a seamless horizontal boundary across the viewport.
 - **System Logo (`sbsi-logo-white.png`)**: Positioned at top.
 - **Subsystem Name:** Poppins Bold for system name, Poppins Regular for "System" / "Management System", 1 font size smaller, 0 letter spacing, 1 line spacing, bottom line.
 - **Divider:** Subtle 1px border line directly below brand header (`border-b border-white/10`).
@@ -212,6 +214,7 @@ The layout strictly adheres to an **8px grid system**. Arbitrary margins and pad
 
 ### 2. Top Header Component
 
+- **Standard Height:** Exactly **`72px`** (`h-[72px]` or `h-18`, 9 × 8px grid increment) across all subsystems (**CRMS**, **SERMS**, **PRS**, **TS**, and Auth Module). This aligns precisely with the sidebar brand lockup baseline (`72px`) and guarantees optimal vertical clearance for user cards, avatars, and control triggers. Standalone portal navigation (e.g. Operations Hub navbar) standardizes on **`80px`** (`h-20`, 10 × 8px grid increment).
 - **Surface:** Solid pure white (`#FFFFFF`) with drop shadow (`shadow-sm`) or backdrop blur (`bg-white/90 backdrop-blur-md`).
 - **Layout:** Full-width flex container aligning navigation controls to the left and user utilities to the right.
 
@@ -224,7 +227,7 @@ The layout strictly adheres to an **8px grid system**. Arbitrary margins and pad
 - **Notification Button:** Bell icon button with solid blue circular unread badge (`#2E85D8`, `rounded-full`) displaying white bold unread count.
 - **Vertical Divider:** Subtle 1px separator (`h-6 w-px bg-slate-200`).
 - **User Profile Card (Dropdown Trigger):**
-  - **Circular Avatar Badge:** Solid background `#A7A7C8`, white bold user initials.
+  - **Circular Avatar Badge:** Solid Brand Primary Navy background (`#252578`) with light lavender accent border ring (`#A7A7C8`, e.g., `border-2 border-[#A7A7C8]`), white bold user initials.
   - **User Display Name:** Poppins SemiBold, Dark Slate (`#1E293B`).
   - **User Role:** Poppins Regular (400), Dark Slate (`#1E293B`) or Muted Slate (e.g., `Supervisor`, `Manager`, `System Admin`).
   - **Interaction State:** Entire user card acts as single interactive trigger (`cursor-pointer`). On hover: `hover:bg-slate-100/80`, `rounded-xl`.

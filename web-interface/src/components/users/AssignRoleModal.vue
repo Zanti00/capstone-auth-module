@@ -101,7 +101,7 @@ onUnmounted(() => {
         <div class="p-6 space-y-6 overflow-visible">
           <!-- User Summary Card -->
           <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center font-bold text-slate-700 shadow-sm border border-slate-200 flex-shrink-0">
+            <div class="w-12 h-12 rounded-full bg-[#252578] flex items-center justify-center font-bold text-white shadow-sm flex-shrink-0">
               {{ (user?.profile?.first_name || 'U').substring(0, 1).toUpperCase() }}{{ (user?.profile?.last_name || '').substring(0, 1).toUpperCase() }}
             </div>
             <div class="min-w-0">

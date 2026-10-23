@@ -104,7 +104,7 @@ const handleOpenConfirmModal = (user: User) => {
               <!-- User cell -->
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-slate-200 flex-shrink-0"></div>
+                  <div class="w-10 h-10 rounded-full bg-slate-200 flex-shrink-0"></div>
                   <div class="space-y-1.5">
                     <div class="h-3 w-28 bg-slate-200 rounded"></div>
                     <div class="h-2.5 w-36 bg-slate-100 rounded"></div>
@@ -143,7 +143,7 @@ const handleOpenConfirmModal = (user: User) => {
             <tr v-for="(user, index) in users" :key="user.id" class="hover:bg-slate-50/50 transition-colors group animate-in fade-in duration-200">
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200">
+                <div class="w-10 h-10 rounded-full bg-[#252578] flex items-center justify-center font-bold text-white text-xs shadow-sm flex-shrink-0">
                   {{ (user.profile?.first_name || 'U').substring(0, 1).toUpperCase() }}{{ (user.profile?.last_name || '').substring(0, 1).toUpperCase() }}
                 </div>
                 <div>
