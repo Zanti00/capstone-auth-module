@@ -194,6 +194,7 @@ const handleConfirmStatusToggle = async (password: string) => {
       :title="userToToggleStatus?.is_active ? 'Deactivate User Account' : 'Activate User Account'"
       :description="userToToggleStatus?.is_active ? 'Are you sure you want to deactivate this user? They will be signed out of all active sessions.' : 'Are you sure you want to activate this user?'"
       :confirmLabel="userToToggleStatus?.is_active ? 'Deactivate' : 'Activate'"
+      :variant="userToToggleStatus?.is_active ? 'danger' : 'primary'"
       :isSubmitting="isTogglingStatus"
       :error="confirmPasswordError"
       @close="showConfirmModal = false"
