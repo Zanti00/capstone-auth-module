@@ -79,7 +79,7 @@ class UserSeeder extends Seeder
             UserCredential::updateOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'password_hash' => Hash::make('password', ['rounds' => 12]),
+                    'password_hash' => Hash::make('password', ['rounds' => config('hashing.bcrypt.rounds', 12)]),
                     'must_change_password' => false,
                     'password_changed_at' => now(),
                 ]
