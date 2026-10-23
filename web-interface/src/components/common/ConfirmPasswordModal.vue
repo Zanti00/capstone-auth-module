@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, toRef } from 'vue'
 import { Loader2, X, Eye, EyeOff, Lock } from 'lucide-vue-next'
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 
 const props = withDefaults(
   defineProps<{
@@ -23,6 +24,8 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'confirm', password: string): void
 }>()
+
+useBodyScrollLock(toRef(props, 'show'))
 
 const password = ref('')
 const showPassword = ref(false)
@@ -58,12 +61,13 @@ const togglePasswordVisibility = () => {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-    <!-- Backdrop with blur -->
-    <div 
-      class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300"
-      @click="handleCancel"
-    ></div>
+  <Teleport to="body">
+    <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <!-- Backdrop with blur covering full screen -->
+      <div 
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300"
+        @click="handleCancel"
+      ></div>
 
     <!-- Modal Card -->
     <div 
@@ -144,4 +148,5 @@ const togglePasswordVisibility = () => {
       </form>
     </div>
   </div>
+  </Teleport>
 </template>

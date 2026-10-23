@@ -82,19 +82,20 @@ const handleOpenConfirmModal = (user: User) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
-          <tr v-if="isLoading">
+          <tr v-if="isLoading" class="animate-in fade-in duration-200">
             <td colspan="6" class="px-6 py-12 text-center">
               <Loader2 class="h-8 w-8 text-slate-300 animate-spin mx-auto" />
-              <p class="text-slate-400 text-sm mt-2">Loading users...</p>
+              <p class="text-slate-400 text-sm mt-2 font-medium">Loading users...</p>
             </td>
           </tr>
-          <tr v-else-if="users.length === 0">
+          <tr v-else-if="users.length === 0" class="animate-in fade-in duration-200">
             <td colspan="6" class="px-6 py-12 text-center">
               <UserIcon class="h-12 w-12 text-slate-200 mx-auto mb-3" />
               <p class="text-slate-500 font-medium">No users found match your criteria.</p>
             </td>
           </tr>
-          <tr v-for="user in users" :key="user.id" class="hover:bg-slate-50/50 transition-colors group">
+          <template v-else>
+            <tr v-for="user in users" :key="user.id" class="hover:bg-slate-50/50 transition-colors group animate-in fade-in duration-200">
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200">
@@ -179,12 +180,13 @@ const handleOpenConfirmModal = (user: User) => {
               </div>
             </td>
           </tr>
+          </template>
         </tbody>
       </table>
     </div>
 
     <!-- Pagination -->
-    <div v-if="pagination && pagination.total > 0" class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+    <div v-if="!isLoading && pagination && pagination.total > 0" class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between animate-in fade-in duration-200">
       <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">
         Showing <span class="text-slate-900 font-bold">{{ users.length }}</span> of <span class="text-slate-900 font-bold">{{ pagination.total }}</span> users
       </p>

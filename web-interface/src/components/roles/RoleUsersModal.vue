@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { toRef } from 'vue'
 import { X, Loader2 } from 'lucide-vue-next'
+import { useBodyScrollLock } from '@/composables/useBodyScrollLock'
 import type { Role, User } from '@/types'
 
 const props = defineProps<{
@@ -13,16 +15,19 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
 
+useBodyScrollLock(toRef(props, 'modelValue'))
+
 const closeModal = () => {
   emit('update:modelValue', false)
 }
 </script>
 
 <template>
-  <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
-    
-    <div class="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+  <Teleport to="body">
+    <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" @click="closeModal"></div>
+      
+      <div class="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
       <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <div>
           <h2 class="text-xl font-bold text-slate-900">Role Users</h2>
@@ -72,4 +77,5 @@ const closeModal = () => {
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
