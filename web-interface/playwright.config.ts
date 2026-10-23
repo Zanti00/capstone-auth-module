@@ -6,7 +6,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? [["github"], ["list"]] : "list",
+  reporter: process.env.CI
+    ? [["github"], ["list"], ["html", { open: "never", outputFolder: "playwright-report" }]]
+    : "list",
   use: {
     baseURL: "http://localhost:5000",
     trace: "on-first-retry",
@@ -22,5 +24,9 @@ export default defineConfig({
     url: "http://localhost:5000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    env: {
+      VITE_INTERNAL_ENCRYPTION_KEY:
+        process.env.VITE_INTERNAL_ENCRYPTION_KEY || "12345678901234567890123456789012",
+    },
   },
 });

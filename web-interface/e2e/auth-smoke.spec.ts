@@ -9,7 +9,6 @@ test.describe('Auth Module Smoke Tests', () => {
   test('login page presents credentials form', async ({ page }) => {
     await page.goto('/login')
 
-    // Verify form elements exist
     const emailInput = page.locator('input[type="email"], input[name="email"], input#email')
     const passwordInput = page.locator('input[type="password"], input[name="password"], input#password')
 
