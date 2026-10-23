@@ -70,10 +70,7 @@ const handleSubmit = async (payload: { id: number | null, name: string, descript
 const handleDelete = async (id: number) => {
   if (!confirm('Are you sure you want to delete this role? This action cannot be undone.')) return
 
-  const result = await deleteRole(id)
-  if (!result.success) {
-    alert(result.message)
-  }
+  await deleteRole(id)
 }
 
 const router = useRouter()

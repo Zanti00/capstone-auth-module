@@ -90,10 +90,7 @@ const handleSubmit = async (payload: { id: number | null, name: string, slug: st
 const handleDelete = async (id: number) => {
   if (!confirm('Are you sure you want to delete this permission? This may affect user access.')) return
 
-  const result = await deletePermissionAction(id)
-  if (!result.success) {
-    alert(result.message)
-  }
+  await deletePermissionAction(id)
 }
 
 onMounted(() => fetchPermissions())

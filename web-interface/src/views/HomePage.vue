@@ -103,6 +103,7 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { isItAdmin } from '@/utils/role'
+import { toast } from '@/composables/useToast'
 import { FileText, Banknote, Ticket, BarChart3, ShieldCheck, LogOut, ArrowRight } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -273,7 +274,7 @@ const openModule = (subsystemTitle: string) => {
     } else if (subsystemTitle === 'Ticketing System') {
       window.location.href = '/ticketing/'
     } else {
-      alert(`${subsystemTitle} is not active in this development environment.`)
+      toast.info(`${subsystemTitle} is not active in this development environment.`)
     }
 }
 </script>
