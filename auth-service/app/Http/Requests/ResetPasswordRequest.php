@@ -27,7 +27,8 @@ class ResetPasswordRequest extends FormRequest
             'password' => [
                 'required',
                 'string',
-                Password::min(8)
+                'max:255',
+                Password::min(12)
                     ->letters()
                     ->mixedCase()
                     ->numbers()

@@ -14,11 +14,12 @@ class CheckActiveSession
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        $sessionId = $request->cookie('session_id') ?? $request->header('X-Session-ID');
+        $sessionId = $request->cookie('session_id') ?: $request->header('X-Session-ID');
 
-        if (!$sessionId) {
+        if (empty($sessionId)) {
+            \Illuminate\Support\Facades\Log::error('CheckActiveSession: No session ID');
             return response()->json(['message' => 'Unauthenticated or session missing.'], 401);
         }
 
@@ -27,12 +28,14 @@ class CheckActiveSession
             ->first();
 
         if (!$session || !$session->is_active) {
+            \Illuminate\Support\Facades\Log::error('CheckActiveSession: Session inactive or invalid', ['session' => $session]);
             return response()->json(['message' => 'Session is inactive or invalid.'], 401);
         }
 
         // Check for 2-hour inactivity (120 minutes)
         $lastActive = \Carbon\Carbon::parse($session->last_active_at);
         if ($lastActive->diffInMinutes(now()) > 120) {
+            \Illuminate\Support\Facades\Log::error('CheckActiveSession: Session expired due to inactivity', ['last_active' => $lastActive, 'now' => now()]);
             DB::table('user_sessions')->where('session_id', $sessionId)->update(['is_active' => false]);
             return response()->json(['message' => 'Session expired due to inactivity.'], 401);
         }
@@ -41,10 +44,23 @@ class CheckActiveSession
         DB::table('user_sessions')->where('session_id', $sessionId)->update(['last_active_at' => now()]);
 
         $user = $request->user();
+        $isPasswordChangeRoute = $request->is('api/me/password');
 
-        if (!$user || !$user->is_active) {
+        if (!$user) {
+            \Illuminate\Support\Facades\Log::error('CheckActiveSession: Authenticated user missing after session lookup');
+            return response()->json(['message' => 'Unauthenticated. Please log in.'], 401);
+        }
+
+        // Allow first-login / forced-password-change users to reach the password update
+        // endpoint even if their account is not active yet. The password change flow
+        // itself will activate the account after a successful update.
+        if (!$user->is_active && !$isPasswordChangeRoute) {
+            \Illuminate\Support\Facades\Log::error('CheckActiveSession: User inactive', ['user' => $user]);
             return response()->json(['message' => 'User account is inactive.'], 401);
         }
+
+        // Eager load relationships used by authorization checks globally
+        $user->loadMissing(['profile.role', 'profile.department']);
 
         return $next($request);
     }

@@ -25,8 +25,13 @@ class RolePermissionTest extends TestCase
     {
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
-            ['is_active' => true]
+            ['is_active' => true, 'is_password_changed' => true]
         );
+
+        if (!$admin->is_password_changed) {
+            $admin->is_password_changed = true;
+            $admin->save();
+        }
 
         $role = Role::firstOrCreate(['name' => 'IT Admin']);
 
@@ -44,7 +49,7 @@ class RolePermissionTest extends TestCase
             ['role_id' => $role->id]
         );
 
-        $accessToken = $admin->createToken('auth_token')->plainTextToken;
+        $accessToken = $admin->createToken('auth_token')->accessToken;
         $sessionId   = (string) Str::uuid();
 
         DB::table('user_sessions')->insert([

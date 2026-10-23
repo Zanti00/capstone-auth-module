@@ -1,0 +1,56 @@
+name: deploy-auth-module
+
+# Builds the capstone-auth-module images (proxy, api, web) and deploys them to
+# the existing Azure Container Apps. Requires the infra repo to have been
+# deployed first (ACR + environment + container app scaffolding).
+#
+# Repo secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID (OIDC).
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+env:
+  RG: rg-capstone
+  LOCATION: eastus
+  ACR: capstoneacr0001
+  IMAGE_TAG: latest
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency: { group: azure-auth, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build auth-api
+        run: az acr build --registry ${{ env.ACR }} --image $ACR.azurecr.io/auth-api:$IMAGE_TAG --file Dockerfile --context ./auth-service
+
+      - name: Build auth-web
+        run: az acr build --registry ${{ env.ACR }} --image $ACR.azurecr.io/auth-web:$IMAGE_TAG --file Dockerfile --context ./web-interface
+
+      - name: Build auth-proxy
+        run: az acr build --registry ${{ env.ACR }} --image $ACR.azurecr.io/auth-proxy:$IMAGE_TAG --file deploy/nginx.Dockerfile --context .
+
+      - name: Roll auth-api
+        run: az containerapp update -n auth-api -g "${{ env.RG }}" --image ${{ env.ACR }}.azurecr.io/auth-api:$IMAGE_TAG
+
+      - name: Roll auth-worker
+        run: az containerapp update -n auth-worker -g "${{ env.RG }}" --image ${{ env.ACR }}.azurecr.io/auth-api:$IMAGE_TAG
+
+      - name: Roll auth-web
+        run: az containerapp update -n auth-web -g "${{ env.RG }}" --image ${{ env.ACR }}.azurecr.io/auth-web:$IMAGE_TAG
+
+      - name: Roll auth-proxy
+        run: az containerapp update -n auth-proxy -g "${{ env.RG }}" --image ${{ env.ACR }}.azurecr.io/auth-proxy:$IMAGE_TAG

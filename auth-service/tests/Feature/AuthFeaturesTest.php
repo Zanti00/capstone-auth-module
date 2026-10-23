@@ -20,6 +20,7 @@ class AuthFeaturesTest extends TestCase
         $user = \App\Models\User::create([
             'email' => 'admin@example.com',
             'is_active' => true,
+            'is_password_changed' => true,
         ]);
         
         // Assuming there is a credentials table relationship for the password hash
@@ -42,10 +43,14 @@ class AuthFeaturesTest extends TestCase
         $response->assertStatus(200);
         
         $cookies = $response->headers->getCookies();
+        $accessToken = null;
         $refreshToken = null;
         $sessionId = null;
         
         foreach ($cookies as $cookie) {
+            if ($cookie->getName() === 'access_token') {
+                $accessToken = $cookie->getValue();
+            }
             if ($cookie->getName() === 'refresh_token') {
                 $refreshToken = $cookie->getValue();
             }
@@ -55,7 +60,7 @@ class AuthFeaturesTest extends TestCase
         }
         
         return [
-            'access_token' => $response->json('access_token'),
+            'access_token' => $accessToken,
             'refresh_token' => $refreshToken,
             'session_id' => $sessionId,
         ];
@@ -76,7 +81,7 @@ class AuthFeaturesTest extends TestCase
         }
         
         $response->assertStatus(200)
-                 ->assertJsonStructure(['access_token', 'token_type', 'user']);
+                 ->assertJsonStructure(['user']);
                  
         $cookies = $response->headers->getCookies();
         $newRefreshToken = null;
@@ -171,5 +176,32 @@ class AuthFeaturesTest extends TestCase
         
         $response->assertStatus(401)
                  ->assertJsonFragment(['message' => 'Session is inactive or invalid.']);
+    }
+
+    public function test_session_expiration_due_to_inactivity()
+    {
+        $tokens = $this->getLoginTokens();
+        
+        // Simulating inactivity by backdating `last_active_at` in the database to 121 minutes ago
+        DB::table('user_sessions')
+            ->where('session_id', $tokens['session_id'])
+            ->update(['last_active_at' => now()->subMinutes(121)]);
+            
+        $response = $this->call('GET', '/api/user', [], [
+            'session_id' => $tokens['session_id']
+        ], [], [
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $tokens['access_token'],
+            'HTTP_X_SESSION_ID' => $tokens['session_id']
+        ]);
+        
+        $response->assertStatus(401)
+                 ->assertJsonFragment(['message' => 'Session expired due to inactivity.']);
+                 
+        // Verify that the session has been marked as inactive in the database
+        $this->assertDatabaseHas('user_sessions', [
+            'session_id' => $tokens['session_id'],
+            'is_active' => 0
+        ]);
     }
 }

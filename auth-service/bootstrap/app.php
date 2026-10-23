@@ -12,16 +12,33 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
         $middleware->append(\App\Http\Middleware\PayloadSecurityMiddleware::class);
+        $middleware->append(\App\Http\Middleware\UrlDecodeBearerToken::class);
         $middleware->alias([
             'active.session' => \App\Http\Middleware\CheckActiveSession::class,
+            'password.change.session' => \App\Http\Middleware\AuthenticatePasswordChangeSession::class,
             'verified' => \App\Http\Middleware\EnsureEmailVerified::class,
+            'decrypt.rsa' => \App\Http\Middleware\DecryptRsaPayload::class,
+            'require.password.change' => \App\Http\Middleware\RequirePasswordChange::class,
+        ]);
+        $middleware->encryptCookies(except: [
+            'access_token',
+            'refresh_token',
+            'session_id',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json(['message' => 'Unauthenticated. Please log in.'], 401);
+            }
+        });
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Too Many Attempts.'
+                ], 429, $e->getHeaders());
             }
         });
     })->create();

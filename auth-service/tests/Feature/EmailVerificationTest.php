@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendTransactionalEmailJob;
+use App\Models\EmailNotification;
 use App\Models\User;
 use App\Models\EmailVerificationToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\VerifyEmail;
 use Tests\TestCase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 class EmailVerificationTest extends TestCase
 {
@@ -16,6 +17,9 @@ class EmailVerificationTest extends TestCase
 
     public function withSession($user)
     {
+        $user->is_password_changed = true;
+        $user->save();
+
         $sessionId = (string) \Illuminate\Support\Str::uuid();
         DB::table('user_sessions')->insert([
             'user_id' => $user->id,
@@ -27,12 +31,12 @@ class EmailVerificationTest extends TestCase
             'created_at' => now(),
         ]);
 
-        return $this->actingAs($user)->withHeader('X-Session-ID', $sessionId);
+        return $this->actingAs($user, 'api')->withHeader('X-Session-ID', $sessionId);
     }
 
     public function test_user_can_request_verification_email()
     {
-        Mail::fake();
+        Queue::fake();
 
         $user = User::factory()->create(['email_verified' => false]);
         
@@ -42,10 +46,14 @@ class EmailVerificationTest extends TestCase
         $this->assertDatabaseHas('email_verification_tokens', [
             'user_id' => $user->id,
         ]);
-
-        Mail::assertQueued(VerifyEmail::class, function ($mail) use ($user) {
-            return $mail->hasTo($user->email);
-        });
+        $this->assertDatabaseHas('email_notifications', [
+            'user_id' => $user->id,
+            'notification_type' => 'email_verification',
+            'recipient_email' => $user->email,
+            'template_key' => 'email_verification',
+            'status' => 'pending',
+        ]);
+        Queue::assertPushed(SendTransactionalEmailJob::class);
     }
 
     public function test_user_can_verify_email_with_valid_token()
@@ -131,7 +139,7 @@ class EmailVerificationTest extends TestCase
         // Define a temporary route to test middleware
         \Illuminate\Support\Facades\Route::get('/test-verified', function () {
             return response()->json(['message' => 'Verified!']);
-        })->middleware(['auth:sanctum', 'active.session', 'verified']);
+        })->middleware(['auth:api', 'active.session', 'verified']);
 
         $response = $this->withSession($user)->getJson('/test-verified');
 
@@ -144,7 +152,7 @@ class EmailVerificationTest extends TestCase
 
         \Illuminate\Support\Facades\Route::get('/test-verified-allow', function () {
             return response()->json(['message' => 'Verified!']);
-        })->middleware(['auth:sanctum', 'active.session', 'verified']);
+        })->middleware(['auth:api', 'active.session', 'verified']);
 
         $response = $this->withSession($user)->getJson('/test-verified-allow');
 

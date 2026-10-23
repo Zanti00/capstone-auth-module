@@ -14,17 +14,22 @@ export default {
     },
     extend: {
       colors: {
+        "primary-dark": "#2F2F73",
+        "surface": "#ffffff",
+        "on-surface": "#1b1b21",
+        "on-surface-variant": "#464651",
+        "outline-variant": "#c7c5d3",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "#252578",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
+          DEFAULT: "#2E85D8",
           foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
@@ -47,6 +52,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+      },
+      spacing: {
+        "container-padding": "24px",
+        "card-gap": "24px"
+      },
+      fontFamily: {
+        "sans": ["Poppins", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",

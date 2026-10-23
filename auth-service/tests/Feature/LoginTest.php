@@ -27,7 +27,8 @@ class LoginTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['access_token', 'token_type', 'user'])
+                 ->assertJsonStructure(['user', 'permissions'])
+                 ->assertCookie('access_token')
                  ->assertCookie('refresh_token');
 
         $this->assertDatabaseHas('audit_logs', [
@@ -87,5 +88,40 @@ class LoginTest extends TestCase
             'actor_id' => $user->id,
             'action' => 'LOGIN_FAILED'
         ]);
+    }
+
+    public function test_account_automatic_unlock_after_decay_period(): void
+    {
+        $email = 'lockeduser@example.com';
+        
+        // Clear rate limiter for test consistency
+        \Illuminate\Support\Facades\RateLimiter::clear('login:' . $email . '|127.0.0.1');
+        
+        // Fail 3 times to lock the account
+        for ($i = 0; $i < 3; $i++) {
+            $this->postJson('/api/login', [
+                'email' => $email,
+                'password' => 'wrongpassword',
+            ]);
+        }
+
+        // Verify it is indeed locked
+        $response = $this->postJson('/api/login', [
+            'email' => $email,
+            'password' => 'wrongpassword',
+        ]);
+        $response->assertStatus(429);
+
+        // Simulate 15 minutes (901 seconds) passing to decay the rate limit
+        $this->travel(901)->seconds();
+
+        // The account should be automatically unlocked and allow login attempts again
+        $unlockedResponse = $this->postJson('/api/login', [
+            'email' => $email,
+            'password' => 'wrongpassword',
+        ]);
+
+        // It should return 422 (invalid credentials) instead of 429 (locked)
+        $unlockedResponse->assertStatus(422);
     }
 }
