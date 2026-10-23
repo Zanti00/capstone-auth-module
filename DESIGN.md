@@ -536,6 +536,36 @@ Before completing any frontend or UI task, the responsible subagent must execute
 - [ ] **Loading States**: Are skeleton loaders used for data fetching and `Loader2` spinners used for button submissions?
 - [ ] **Elevations**: Do shadows match Level 1 (`shadow-sm`) through Level 4 (`shadow-2xl`)?
 - [ ] **Status Badges**: Are badge labels in Title Case? Is a single emphasis tier used per table column?
-- [ ] **Toasts**: Do toast notifications appear in the Top-Right (`top: 24px; right: 24px; z-index: 1200;`) with 4px left accent bar and 4-second hover-paused timer?
+- [ ] **Toasts**: Do toast notifications appear in the Bottom-Right (`bottom: 32px; right: 32px; z-index: 100;`) with accent bar, circular badge, and hover-paused timer?
 - [ ] **Tailwind 3.4**: Did the agent preserve Tailwind 3.4 compatibility without using Tailwind 4 features in `web-interface`?
 - [ ] **Figma Reference**: Was Figma MCP (`https://www.figma.com/design/ciWpnQzNBU3Zopv97v29nN/PRS?node-id=79-1078&t=vMI8xDhUbfkm564o-1`) consulted for any ambiguous component specs?
+
+---
+
+## XI. Toast Notification System Specification
+
+The ONE UI Toast Notification system provides real-time, non-blocking asynchronous feedback across the enterprise ecosystem (**CRMS**, **SERMS**, **PRS**, **TS**, and **Auth Module**).
+
+### A. Placement & Stacking
+- **Screen Position:** Bottom-Right (`bottom: 32px; right: 32px; z-index: 100;`), avoiding collisions with header actions, top navigation bars, and user profile menus.
+- **Queue Limits:** Maximum of 3 simultaneous toast cards. Older notifications are automatically dismissed when capacity is exceeded.
+- **De-duplication:** Duplicate messages of the same variant reset their display timer rather than spawning duplicate cards.
+
+### B. Visual Geometry & Token Adherence
+- **Container Geometry:** Pure White surface (`#FFFFFF`), `rounded-2xl` (16px), elevation shadow (`shadow-[0_10px_35px_rgba(0,0,0,0.12)]`), border (`border border-slate-100`).
+- **Accent Indicator Bar:** `w-1.5 rounded-l-2xl` along the left edge.
+- **Circular Icon Badge:** `w-12 h-12 rounded-full` with Lucide icons (`size: 24-26`, stroke width `2.5`).
+- **Typography:** Sentence-case string in code rendered in uppercase (`uppercase font-bold text-sm tracking-tight text-[#1E293B] font-sans`).
+- **Dismiss Button:** Lucide `X` (`size: 18`), `rounded-xl`, hover background (`hover:bg-slate-100`).
+
+### C. Variant Color Mapping
+| Variant | Left Accent Bar | Icon Circle Background | Icon Glyph | Glyph Color | Default Duration |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Success** | `bg-emerald-500` | `bg-emerald-50` | `CircleCheck` | `text-emerald-500` | 4000ms |
+| **Error** | `bg-red-500` | `bg-red-50` | `X` | `text-red-500` | 6000ms |
+| **Info** | `bg-[#2E85D8]` | `bg-blue-50` | `Info` | `text-[#2E85D8]` | 4000ms |
+
+### D. Interaction & Accessibility
+- **Hover Behavior:** Hovering over any notification card immediately pauses its dismissal timer; mouse leave resumes countdown from remaining time.
+- **Screen Readers:** Enclosing container provides `aria-live="polite"`; error notifications carry `role="alert"`; status notifications carry `role="status"`.
+- **Hybrid Error Handling:** Duplicate record detections (409 or 422 unique constraint violations) trigger error toasts. Field validation errors remain inline inside active modals.

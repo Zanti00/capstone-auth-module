@@ -8,7 +8,6 @@ import {
   Loader2,
   Save,
   AlertCircle,
-  CheckCircle2,
   Search,
   FileText,
   BarChart3,
@@ -19,6 +18,7 @@ import {
 } from 'lucide-vue-next'
 import { roleService } from '@/services/roleService'
 import { permissionService } from '@/services/permissionService'
+import { notifySuccess, notifyApiError } from '@/lib/notify'
 import type { Role, Permission } from '@/types'
 
 const route = useRoute()
@@ -32,7 +32,6 @@ const selectedPermissionIds = ref<number[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const errorMessage = ref('')
-const successMessage = ref('')
 const searchQuery = ref('')
 
 // ─── Subsystem Definitions ────────────────────────────────────────────────────
@@ -370,7 +369,6 @@ const handleSave = async () => {
   if (!role.value) return
   saving.value = true
   errorMessage.value = ''
-  successMessage.value = ''
 
   try {
     // 1. Sync backend permissions via API
@@ -385,13 +383,10 @@ const handleSave = async () => {
       localStorage.setItem(`cms_system_access_${role.value.name}`, JSON.stringify(systemArray))
     }
 
-    successMessage.value = `Permissions and system access for "${role.value.name}" saved successfully!`
-    setTimeout(() => {
-      successMessage.value = ''
-    }, 4000)
+    notifySuccess('Role permissions saved successfully')
   } catch (err: any) {
     console.error('Failed to save permissions', err)
-    errorMessage.value = err.response?.data?.message || 'Failed to update permissions. Please try again.'
+    notifyApiError(err, 'role', 'Failed to update permissions. Please try again.')
   } finally {
     saving.value = false
   }
@@ -448,14 +443,6 @@ onMounted(() => {
     </div>
 
     <!-- Alert Messages -->
-    <div
-      v-if="successMessage"
-      class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm animate-in fade-in"
-    >
-      <CheckCircle2 :size="18" class="text-emerald-600 shrink-0" />
-      <span class="font-medium">{{ successMessage }}</span>
-    </div>
-
     <div
       v-if="errorMessage"
       class="flex items-center gap-3 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-sm animate-in fade-in"

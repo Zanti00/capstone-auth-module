@@ -2,6 +2,8 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { Plus, Search, Building } from 'lucide-vue-next'
 import { branchService, type BranchPayload } from '@/services/branchService'
+import { notifySuccess, notifyApiError } from '@/lib/notify'
+import { toast } from '@/composables/useToast'
 import type { Branch, PaginationMeta } from '@/types'
 import BranchesTable from './BranchesTable.vue'
 import BranchFormModal from './BranchFormModal.vue'
@@ -87,14 +89,17 @@ const handleSubmit = async (payload: { id: number | null; name: string; address:
 
     if (modalMode.value === 'create') {
       await branchService.createBranch(data)
+      notifySuccess('Branch created successfully')
     } else if (payload.id !== null) {
       await branchService.updateBranch(payload.id, data)
+      notifySuccess('Branch updated successfully')
     }
 
     showModal.value = false
     await fetchBranches(pagination.value.current_page)
   } catch (err: any) {
     modalError.value = err.response?.data?.message || 'Failed to save branch'
+    notifyApiError(err, 'branch', 'Failed to save branch')
   } finally {
     submitting.value = false
   }
@@ -105,7 +110,7 @@ const handleDelete = async (id: number) => {
   if (!branch) return
 
   if ((branch.users_count ?? 0) > 0) {
-    alert(`Cannot delete '${branch.name}' because it has ${branch.users_count} assigned users. Reassign them first.`)
+    toast.error(`Cannot delete '${branch.name}' because it has ${branch.users_count} assigned users. Reassign them first.`)
     return
   }
 
@@ -115,9 +120,10 @@ const handleDelete = async (id: number) => {
 
   try {
     await branchService.deleteBranch(id)
+    notifySuccess('Branch deleted successfully')
     await fetchBranches(pagination.value.current_page)
   } catch (err: any) {
-    alert(err.response?.data?.message || 'Failed to delete branch')
+    notifyApiError(err, 'branch', 'Failed to delete branch')
   }
 }
 

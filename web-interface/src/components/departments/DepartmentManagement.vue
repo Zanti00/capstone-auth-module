@@ -6,6 +6,7 @@ import {
   Building2
 } from 'lucide-vue-next'
 import { useDepartments } from '@/composables/useDepartments'
+import { toast } from '@/composables/useToast'
 import type { Department } from '@/types'
 import DepartmentFormModal from './DepartmentFormModal.vue'
 import DepartmentsTable from './DepartmentsTable.vue'
@@ -71,16 +72,13 @@ const handleDelete = async (id: number) => {
   if (!dept) return
 
   if ((dept.users_count ?? 0) > 0) {
-    alert(`Cannot delete department with ${dept.users_count} assigned users.`)
+    toast.error(`Cannot delete department with ${dept.users_count} assigned users.`)
     return
   }
 
   if (!confirm('Are you sure you want to delete this department?')) return
 
-  const result = await deleteDepartmentAction(id)
-  if (!result.success) {
-    alert(result.message)
-  }
+  await deleteDepartmentAction(id)
 }
 
 const openUserModal = async (dept: Department, page = 1) => {

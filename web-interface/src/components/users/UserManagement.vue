@@ -69,8 +69,6 @@ const handleAssignRole = async () => {
   if (result.success) {
     showRoleModal.value = false
     fetchUsers(pagination.value.current_page)
-  } else {
-    alert(result.message)
   }
 }
 
@@ -87,7 +85,11 @@ const openConfirmModal = (user: User) => {
 const handleConfirmStatusToggle = async (password: string) => {
   if (!userToToggleStatus.value) return
 
-  const success = await toggleUserStatus(userToToggleStatus.value.id, password)
+  const success = await toggleUserStatus(
+    userToToggleStatus.value.id, 
+    password, 
+    Boolean(userToToggleStatus.value.is_active)
+  )
   if (success) {
     showConfirmModal.value = false
     fetchUsers(pagination.value.current_page)
