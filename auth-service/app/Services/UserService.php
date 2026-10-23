@@ -180,19 +180,29 @@ class UserService
                 Log::warning('Failed to invalidate cache after user creation', ['error' => $e->getMessage()]);
             }
 
-            $this->emailNotificationService->queueNotification(
-                'welcome_temp_password',
-                $user->email,
-                [
-                    'email' => $user->email,
-                    'first_name' => $validated['first_name'],
-                    'temporary_password' => $tempPassword,
-                    'login_url' => rtrim((string) config('app.frontend_url', 'http://localhost:5173'), '/') . '/login',
-                    'app_name' => config('app.name'),
-                ],
-                $user->id,
-                'Welcome to ' . config('app.name')
-            );
+            // Email queuing is best-effort: a misconfigured template or provider
+            // must NOT roll back an already-committed user record.
+            try {
+                $this->emailNotificationService->queueNotification(
+                    'welcome_temp_password',
+                    $user->email,
+                    [
+                        'email' => $user->email,
+                        'first_name' => $validated['first_name'],
+                        'temporary_password' => $tempPassword,
+                        'login_url' => rtrim((string) config('app.frontend_url', 'http://localhost:5173'), '/') . '/login',
+                        'app_name' => config('app.name'),
+                    ],
+                    $user->id,
+                    'Welcome to ' . config('app.name')
+                );
+            } catch (\Exception $e) {
+                Log::warning('Failed to queue welcome email after user creation', [
+                    'user_id'   => $user->id,
+                    'email'     => $user->email,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
 
             return $user->load(['profile.role', 'profile.department', 'profile.branch']);
 
