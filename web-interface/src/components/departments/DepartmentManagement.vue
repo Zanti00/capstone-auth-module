@@ -11,6 +11,7 @@ import type { Department } from '@/types'
 import DepartmentFormModal from './DepartmentFormModal.vue'
 import DepartmentsTable from './DepartmentsTable.vue'
 import DepartmentUsersModal from './DepartmentUsersModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const {
   departments,
@@ -67,7 +68,12 @@ const handleSubmit = async (payload: { id: number | null, name: string, descript
   }
 }
 
-const handleDelete = async (id: number) => {
+// ── Delete Confirmation ──────────────────────────────────────────────────────
+const showDeleteModal = ref(false)
+const deptToDelete = ref<Department | null>(null)
+const isDeletingDept = ref(false)
+
+const handleDelete = (id: number) => {
   const dept = departments.value.find(d => d.id === id)
   if (!dept) return
 
@@ -76,9 +82,20 @@ const handleDelete = async (id: number) => {
     return
   }
 
-  if (!confirm('Are you sure you want to delete this department?')) return
+  deptToDelete.value = dept
+  showDeleteModal.value = true
+}
 
-  await deleteDepartmentAction(id)
+const handleConfirmDelete = async () => {
+  if (!deptToDelete.value) return
+  isDeletingDept.value = true
+  try {
+    await deleteDepartmentAction(deptToDelete.value.id)
+  } finally {
+    isDeletingDept.value = false
+    showDeleteModal.value = false
+    deptToDelete.value = null
+  }
 }
 
 const openUserModal = async (dept: Department, page = 1) => {
@@ -176,5 +193,20 @@ watch(filters, () => {
       :error="error"
       @submit="handleSubmit"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Delete Department"
+      confirm-label="Delete"
+      variant="danger"
+      :is-submitting="isDeletingDept"
+      @close="showDeleteModal = false"
+      @confirm="handleConfirmDelete"
+    >
+      <p>
+        Are you sure you want to permanently delete department <strong class="font-bold text-slate-800">'{{ deptToDelete?.name }}'</strong>? This action cannot be undone and the record data will be removed from the system.
+      </p>
+    </ConfirmModal>
   </div>
 </template>
