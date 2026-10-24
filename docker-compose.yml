@@ -8,6 +8,7 @@ services:
       - ./auth-service:/var/www/html
       - auth-service-vendor:/var/www/html/vendor
     environment:
+      - APP_NAME=${APP_NAME}
       - APP_ENV=${APP_ENV}
       - APP_DEBUG=${APP_DEBUG}
       - DB_CONNECTION=${DB_CONNECTION}
@@ -64,6 +65,7 @@ services:
       - ./auth-service:/var/www/html
       - auth-service-vendor:/var/www/html/vendor
     environment:
+      - APP_NAME=${APP_NAME}
       - APP_ENV=${APP_ENV}
       - APP_DEBUG=${APP_DEBUG}
       - DB_CONNECTION=${DB_CONNECTION}

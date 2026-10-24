@@ -25,6 +25,7 @@ const emit = defineEmits<{
   'update:perPage': [value: number]
   'fetch': [page: number]
   'open-role-modal': [user: User]
+  'open-branch-modal': [user: User]
   'open-confirm-modal': [user: User]
 }>()
 
@@ -75,6 +76,11 @@ onUnmounted(() => {
 const handleOpenRoleModal = (user: User) => {
   activeDropdownUserId.value = null
   emit('open-role-modal', user)
+}
+
+const handleOpenBranchModal = (user: User) => {
+  activeDropdownUserId.value = null
+  emit('open-branch-modal', user)
 }
 
 const handleOpenConfirmModal = (user: User) => {
@@ -209,6 +215,15 @@ const handleOpenConfirmModal = (user: User) => {
                   >
                     <Shield :size="14" class="text-slate-400" />
                     <span>Assign Role</span>
+                  </button>
+
+                  <!-- Assign Branch Button -->
+                  <button 
+                    @click="handleOpenBranchModal(user)"
+                    class="w-full px-2.5 py-1.5 hover:bg-slate-100 rounded-lg text-slate-700 hover:text-slate-900 transition-all flex items-center justify-start gap-2 text-xs font-semibold cursor-pointer"
+                  >
+                    <MapPin :size="14" class="text-slate-400" />
+                    <span>Assign Branch</span>
                   </button>
 
                   <!-- Activate/Deactivate Button -->

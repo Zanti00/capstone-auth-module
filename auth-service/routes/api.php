@@ -44,6 +44,7 @@ Route::get('/internal/users-by-roles', [InternalUserController::class, 'getUsers
 Route::get('/internal/users-batch', [InternalUserController::class, 'getUsersBatch']);
 Route::get('/internal/roles/{id}/active-holders', [InternalRoleController::class, 'activeHolders']);
 Route::get('/internal/roles/{id}/describe', [InternalRoleController::class, 'describe']);
+Route::get('/internal/branches', [BranchController::class, 'internalBranches']);
 
 Route::middleware(['auth:api', 'active.session'])->group(function () {
     // Routes that must be accessible even if password change is required
@@ -72,6 +73,7 @@ Route::middleware(['auth:api', 'active.session', 'require.password.change', 'can
     Route::post('/users', [AdminUserController::class, 'store']);
     Route::get('/users/{id}', [AdminUserController::class, 'show']);
     Route::patch('/users/{id}/status', [AdminUserController::class, 'toggleStatus']);
+    Route::patch('/users/{id}/branch', [BranchController::class, 'assignBranch']);
     Route::get('/department-options', [AdminUserController::class, 'getDepartments']);
     Route::get('/role-options', [AdminUserController::class, 'getRoles']);
     Route::get('/branch-options', [BranchController::class, 'options']);

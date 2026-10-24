@@ -88,7 +88,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        $user->loadMissing(['profile.role', 'profile.department']);
+        $user->loadMissing(['profile.role', 'profile.department', 'profile.branch']);
 
         return response()->json([
             'user' => $this->authService->formatUserForFrontend($user),
