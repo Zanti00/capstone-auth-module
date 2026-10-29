@@ -6,7 +6,6 @@ import { useToast } from '@/composables/useToast'
 import { isAllowedRedirectUrl } from '@/utils/redirectValidation'
 import { Eye, EyeOff, Loader2, ArrowLeft, Mail, Lock, ShieldCheck } from 'lucide-vue-next'
 import ForgotPasswordModal from '@/views/auth/ForgotPassword.vue'
-import ToastNotification from '@/components/common/ToastNotification.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -93,8 +92,6 @@ const handleLogin = async () => {
 
 <template>
   <div class="login-container">
-    <ToastNotification />
-
     <!-- ── LEFT PANEL (Branding & Enterprise Identity) ── -->
     <div class="left-panel">
       <!-- Background Image & Gradient Overlay -->
@@ -255,7 +252,7 @@ const handleLogin = async () => {
   inset: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/images/SBSI-bg.png');
+  background-image: url('/images/SBSI-bg.webp');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

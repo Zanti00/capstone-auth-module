@@ -2,9 +2,12 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { Plus, Search, Building } from 'lucide-vue-next'
 import { branchService, type BranchPayload } from '@/services/branchService'
+import { notifySuccess, notifyApiError } from '@/lib/notify'
+import { toast } from '@/composables/useToast'
 import type { Branch, PaginationMeta } from '@/types'
 import BranchesTable from './BranchesTable.vue'
 import BranchFormModal from './BranchFormModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const branches = ref<Branch[]>([])
 const loading = ref(true)
@@ -87,37 +90,53 @@ const handleSubmit = async (payload: { id: number | null; name: string; address:
 
     if (modalMode.value === 'create') {
       await branchService.createBranch(data)
+      notifySuccess('Branch created successfully')
     } else if (payload.id !== null) {
       await branchService.updateBranch(payload.id, data)
+      notifySuccess('Branch updated successfully')
     }
 
     showModal.value = false
     await fetchBranches(pagination.value.current_page)
   } catch (err: any) {
     modalError.value = err.response?.data?.message || 'Failed to save branch'
+    notifyApiError(err, 'branch', 'Failed to save branch')
   } finally {
     submitting.value = false
   }
 }
 
-const handleDelete = async (id: number) => {
+// ── Delete Confirmation ──────────────────────────────────────────────────────
+const showDeleteModal = ref(false)
+const branchToDelete = ref<Branch | null>(null)
+const isDeletingBranch = ref(false)
+
+const handleDelete = (id: number) => {
   const branch = branches.value.find(b => b.id === id)
   if (!branch) return
 
   if ((branch.users_count ?? 0) > 0) {
-    alert(`Cannot delete '${branch.name}' because it has ${branch.users_count} assigned users. Reassign them first.`)
+    toast.error(`Cannot delete '${branch.name}' because it has ${branch.users_count} assigned users. Reassign them first.`)
     return
   }
 
-  if (!confirm(`Are you sure you want to delete branch '${branch.name}'?`)) {
-    return
-  }
+  branchToDelete.value = branch
+  showDeleteModal.value = true
+}
 
+const handleConfirmDelete = async () => {
+  if (!branchToDelete.value) return
+  isDeletingBranch.value = true
   try {
-    await branchService.deleteBranch(id)
+    await branchService.deleteBranch(branchToDelete.value.id)
+    notifySuccess('Branch deleted successfully')
     await fetchBranches(pagination.value.current_page)
   } catch (err: any) {
-    alert(err.response?.data?.message || 'Failed to delete branch')
+    notifyApiError(err, 'branch', 'Failed to delete branch')
+  } finally {
+    isDeletingBranch.value = false
+    showDeleteModal.value = false
+    branchToDelete.value = null
   }
 }
 
@@ -197,5 +216,20 @@ watch(
       :error="modalError"
       @submit="handleSubmit"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Delete Branch"
+      confirm-label="Delete"
+      variant="danger"
+      :is-submitting="isDeletingBranch"
+      @close="showDeleteModal = false"
+      @confirm="handleConfirmDelete"
+    >
+      <p>
+        Are you sure you want to permanently delete branch <strong class="font-bold text-slate-800">'{{ branchToDelete?.name }}'</strong>? This action cannot be undone and the record data will be removed from the system.
+      </p>
+    </ConfirmModal>
   </div>
 </template>

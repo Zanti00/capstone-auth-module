@@ -30,6 +30,13 @@ server {
 
     # Auth API gateway
     location /api/ {
+        # php2shell hardening (auth API only): JSON-only API, so cap body size
+        # and reject multipart. /api/serms/ matches a longer prefix first.
+        client_max_body_size 2m;
+        if ($content_type ~* "multipart/form-data") {
+            return 415;
+        }
+
         set $auth_header $http_authorization;
         if ($cookie_access_token) {
             set $auth_header "Bearer $cookie_access_token";

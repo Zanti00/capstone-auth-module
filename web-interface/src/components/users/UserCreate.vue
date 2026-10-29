@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, onMounted } from 'vue'
 import { useUsers } from '@/composables/useUsers'
-import { Loader2, UserPlus, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-vue-next'
+import { Loader2, UserPlus, AlertCircle, ArrowLeft } from 'lucide-vue-next'
 
 const {
   roles,
@@ -9,9 +9,7 @@ const {
   branches,
   isLoadingData,
   isSubmitting,
-  isSuccess,
   errors,
-  generalError,
   fetchCreateFormData,
   createUser,
 } = useUsers()
@@ -170,18 +168,8 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        <!-- Feedback & Action -->
+        <!-- Action -->
         <div class="pt-4">
-          <div v-if="isSuccess" class="mb-4 p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3 text-emerald-700 animate-in slide-in-from-bottom-2">
-            <CheckCircle2 :size="20" />
-            <span class="text-sm font-semibold">User created successfully! Welcome email queued.</span>
-          </div>
-
-          <div v-if="generalError" class="mb-4 p-4 rounded-xl bg-red-50 border border-red-100 flex items-center gap-3 text-red-700 animate-in slide-in-from-bottom-2">
-            <AlertCircle :size="20" />
-            <span class="text-sm font-semibold">{{ generalError }}</span>
-          </div>
-
           <button 
             type="submit" 
             :disabled="isSubmitting"

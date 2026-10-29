@@ -8,6 +8,7 @@ import {
 import ConfirmPasswordModal from '../common/ConfirmPasswordModal.vue'
 import UsersTable from './UsersTable.vue'
 import AssignRoleModal from './AssignRoleModal.vue'
+import AssignBranchModal from './AssignBranchModal.vue'
 import type { User } from '@/types'
 
 const {
@@ -22,6 +23,8 @@ const {
   fetchMetadata,
   isAssigning,
   assignRole,
+  isAssigningBranch,
+  assignBranch,
   isTogglingStatus,
   confirmPasswordError,
   toggleUserStatus,
@@ -69,8 +72,26 @@ const handleAssignRole = async () => {
   if (result.success) {
     showRoleModal.value = false
     fetchUsers(pagination.value.current_page)
-  } else {
-    alert(result.message)
+  }
+}
+
+// ── Branch Assignment Modal ─────────────────────────────────────────────────
+const showBranchModal = ref(false)
+const selectedBranchId = ref<number | string | null>('')
+
+const openBranchModal = (user: User) => {
+  selectedUser.value = user
+  selectedBranchId.value = user.profile?.branch?.id ?? null
+  showBranchModal.value = true
+}
+
+const handleAssignBranch = async () => {
+  if (!selectedUser.value) return
+
+  const result = await assignBranch(selectedUser.value.id, selectedBranchId.value)
+  if (result.success) {
+    showBranchModal.value = false
+    fetchUsers(pagination.value.current_page)
   }
 }
 
@@ -87,7 +108,11 @@ const openConfirmModal = (user: User) => {
 const handleConfirmStatusToggle = async (password: string) => {
   if (!userToToggleStatus.value) return
 
-  const success = await toggleUserStatus(userToToggleStatus.value.id, password)
+  const success = await toggleUserStatus(
+    userToToggleStatus.value.id, 
+    password, 
+    Boolean(userToToggleStatus.value.is_active)
+  )
   if (success) {
     showConfirmModal.value = false
     fetchUsers(pagination.value.current_page)
@@ -174,6 +199,7 @@ const handleConfirmStatusToggle = async (password: string) => {
       v-model:per-page="filters.per_page"
       @fetch="fetchUsers"
       @open-role-modal="openRoleModal"
+      @open-branch-modal="openBranchModal"
       @open-confirm-modal="openConfirmModal"
     />
 
@@ -186,12 +212,23 @@ const handleConfirmStatusToggle = async (password: string) => {
       :is-assigning="isAssigning"
       @submit="handleAssignRole"
     />
+
+    <!-- Branch Assignment Modal -->
+    <AssignBranchModal
+      v-model="showBranchModal"
+      :user="selectedUser"
+      :branches="branches"
+      v-model:selected-branch-id="selectedBranchId"
+      :is-assigning="isAssigningBranch"
+      @submit="handleAssignBranch"
+    />
     <!-- Password Confirmation Modal for Status Toggle -->
     <ConfirmPasswordModal
       :show="showConfirmModal"
       :title="userToToggleStatus?.is_active ? 'Deactivate User Account' : 'Activate User Account'"
       :description="userToToggleStatus?.is_active ? 'Are you sure you want to deactivate this user? They will be signed out of all active sessions.' : 'Are you sure you want to activate this user?'"
       :confirmLabel="userToToggleStatus?.is_active ? 'Deactivate' : 'Activate'"
+      :variant="userToToggleStatus?.is_active ? 'danger' : 'primary'"
       :isSubmitting="isTogglingStatus"
       :error="confirmPasswordError"
       @close="showConfirmModal = false"

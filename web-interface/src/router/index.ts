@@ -5,6 +5,7 @@ import { clearClientAuthState, isAuthenticatedClientSide } from "@/utils/authSta
 import { isItAdmin } from "@/utils/role";
 import { useAuth } from "@/composables/useAuth";
 import type { FetchCurrentUserResult } from "@/composables/useAuth";
+import { toast } from "@/composables/useToast";
 
 const routes = [
   {
@@ -218,7 +219,7 @@ router.beforeEach(async (to, _from, next) => {
     if (hydration) {
       if (hydration.success) {
         // Hydrated, but the backend says this user is not an IT Admin.
-        alert(
+        toast.error(
           "Access Denied: Only IT Admin can access the authentication module interface.",
         );
         clearClientAuthState();
@@ -232,7 +233,7 @@ router.beforeEach(async (to, _from, next) => {
         next();
         return;
       }
-      alert(
+      toast.error(
         "Access Denied: Only IT Admin can access the authentication module interface.",
       );
       clearClientAuthState();
@@ -241,7 +242,7 @@ router.beforeEach(async (to, _from, next) => {
     }
 
     // Defensive: requiresAdmin without hydration performed (should not happen).
-    alert(
+    toast.error(
       "Access Denied: Only IT Admin can access the authentication module interface.",
     );
     clearClientAuthState();

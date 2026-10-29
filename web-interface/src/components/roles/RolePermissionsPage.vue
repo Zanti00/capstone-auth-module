@@ -8,17 +8,16 @@ import {
   Loader2,
   Save,
   AlertCircle,
-  CheckCircle2,
   Search,
   FileText,
   BarChart3,
   Banknote,
-  Users,
   Ticket,
   Layers
 } from 'lucide-vue-next'
 import { roleService } from '@/services/roleService'
 import { permissionService } from '@/services/permissionService'
+import { notifySuccess, notifyApiError } from '@/lib/notify'
 import type { Role, Permission } from '@/types'
 
 const route = useRoute()
@@ -32,7 +31,6 @@ const selectedPermissionIds = ref<number[]>([])
 const loading = ref(true)
 const saving = ref(false)
 const errorMessage = ref('')
-const successMessage = ref('')
 const searchQuery = ref('')
 
 // ─── Subsystem Definitions ────────────────────────────────────────────────────
@@ -75,27 +73,18 @@ const SYSTEMS: SystemDef[] = [
     badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
   },
   {
-    key: 'hrm',
-    name: 'HRM',
-    fullName: 'Human Resource Management',
-    description: 'Employee profiles, time & attendance logs, leave management, and company directory.',
-    icon: Users,
-    available: false,
-    badgeColor: 'bg-slate-100 text-slate-500 border-slate-200',
-  },
-  {
     key: 'ticketing',
     name: 'Ticketing',
-    fullName: 'Internal Support & Helpdesk',
+    fullName: 'Ticketing System',
     description: 'Centralized IT helpdesk, issue escalation queues, priority SLAs, and knowledge base.',
     icon: Ticket,
-    available: false,
-    badgeColor: 'bg-slate-100 text-slate-500 border-slate-200',
+    available: true,
+    badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
   },
 ]
 
 // ─── Role Subsystem Access State ──────────────────────────────────────────────
-const activeSystems = ref<Set<string>>(new Set(['cms']))
+const activeSystems = ref<Set<string>>(new Set())
 
 const loadSystemAccess = () => {
   if (!roleId.value) return
@@ -105,19 +94,15 @@ const loadSystemAccess = () => {
     try {
       const parsed = JSON.parse(saved)
       if (Array.isArray(parsed)) {
-        activeSystems.value = new Set(parsed)
+        activeSystems.value = new Set(parsed.filter((k: string) => k !== 'hrm'))
         return
       }
     } catch (e) {
       console.warn('Failed to parse saved system access', e)
     }
   }
-  // Default based on role name
-  if (role.value?.name === 'Admin' || role.value?.name === 'Super Admin' || role.value?.name === 'IT Admin') {
-    activeSystems.value = new Set(['cms', 'prs', 'serms'])
-  } else {
-    activeSystems.value = new Set(['cms'])
-  }
+  // All subsystems remain disabled by default
+  activeSystems.value = new Set()
 }
 
 const toggleSystemAccess = (systemKey: string) => {
@@ -250,6 +235,7 @@ const getSystemOfPerm = (perm: Permission): string => {
   if (perm.slug.startsWith('cms.')) return 'cms'
   if (perm.slug.startsWith('prs.')) return 'prs'
   if (perm.slug.startsWith('serms.')) return 'serms'
+  if (perm.slug.startsWith('ticketing.') || perm.slug.startsWith('ts.')) return 'ticketing'
   return 'auth'
 }
 
@@ -266,6 +252,7 @@ const filteredPermissions = computed(() => {
 const cmsPermissions = computed(() => filteredPermissions.value.filter(p => getSystemOfPerm(p) === 'cms'))
 const prsPermissions = computed(() => filteredPermissions.value.filter(p => getSystemOfPerm(p) === 'prs'))
 const sermsPermissions = computed(() => filteredPermissions.value.filter(p => getSystemOfPerm(p) === 'serms'))
+const ticketingPermissions = computed(() => filteredPermissions.value.filter(p => getSystemOfPerm(p) === 'ticketing'))
 const authPermissions = computed(() => filteredPermissions.value.filter(p => getSystemOfPerm(p) === 'auth'))
 
 // Categorized CMS items
@@ -370,7 +357,6 @@ const handleSave = async () => {
   if (!role.value) return
   saving.value = true
   errorMessage.value = ''
-  successMessage.value = ''
 
   try {
     // 1. Sync backend permissions via API
@@ -385,13 +371,10 @@ const handleSave = async () => {
       localStorage.setItem(`cms_system_access_${role.value.name}`, JSON.stringify(systemArray))
     }
 
-    successMessage.value = `Permissions and system access for "${role.value.name}" saved successfully!`
-    setTimeout(() => {
-      successMessage.value = ''
-    }, 4000)
+    notifySuccess('Role permissions saved successfully')
   } catch (err: any) {
     console.error('Failed to save permissions', err)
-    errorMessage.value = err.response?.data?.message || 'Failed to update permissions. Please try again.'
+    notifyApiError(err, 'role', 'Failed to update permissions. Please try again.')
   } finally {
     saving.value = false
   }
@@ -449,14 +432,6 @@ onMounted(() => {
 
     <!-- Alert Messages -->
     <div
-      v-if="successMessage"
-      class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm animate-in fade-in"
-    >
-      <CheckCircle2 :size="18" class="text-emerald-600 shrink-0" />
-      <span class="font-medium">{{ successMessage }}</span>
-    </div>
-
-    <div
       v-if="errorMessage"
       class="flex items-center gap-3 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-sm animate-in fade-in"
     >
@@ -495,64 +470,70 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <div
             v-for="sys in SYSTEMS"
             :key="sys.key"
-            class="relative rounded-2xl border transition-all duration-200 p-5 flex flex-col justify-between"
+            @click="sys.available && toggleSystemAccess(sys.key)"
+            class="relative rounded-2xl border transition-all duration-200 p-5 flex flex-col justify-between overflow-hidden select-none"
             :class="[
               !sys.available
                 ? 'bg-slate-50/60 border-slate-200/80 opacity-60 cursor-not-allowed'
                 : activeSystems.has(sys.key)
-                ? 'bg-[#252578]/[0.03] border-[#252578]/30 shadow-sm ring-1 ring-[#252578]/15'
-                : 'bg-white border-slate-200 hover:border-slate-300'
+                ? 'bg-[#252578]/[0.03] border-[#252578]/40 shadow-sm ring-1 ring-[#252578]/15 cursor-pointer hover:shadow-md'
+                : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-md cursor-pointer'
             ]"
           >
-            <!-- Card Header -->
-            <div class="flex items-start justify-between gap-3 mb-3">
-              <div class="flex items-center gap-3">
+            <div>
+              <!-- Top Row: Icon & Toggle Switch -->
+              <div class="flex items-center justify-between gap-3 mb-3.5">
                 <div
                   class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors"
                   :class="activeSystems.has(sys.key) && sys.available ? 'bg-[#252578] text-white shadow-sm' : 'bg-slate-100 text-slate-500'"
                 >
                   <component :is="sys.icon" :size="20" stroke-width="2" />
                 </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-900 text-sm">{{ sys.name }}</span>
-                    <span
-                      class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
-                      :class="sys.available
-                        ? (activeSystems.has(sys.key) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500')
-                        : 'bg-slate-200 text-slate-600'"
-                    >
-                      {{ sys.available ? (activeSystems.has(sys.key) ? 'Allowed' : 'Disabled') : 'Coming Soon' }}
-                    </span>
-                  </div>
-                  <p class="text-xs text-slate-500 font-medium line-clamp-1 mt-0.5">{{ sys.fullName }}</p>
-                </div>
+
+                <!-- Toggle Switch -->
+                <button
+                  v-if="sys.available"
+                  type="button"
+                  @click.stop="toggleSystemAccess(sys.key)"
+                  class="w-11 h-6 rounded-full flex items-center p-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-[#252578]/20 shrink-0 cursor-pointer"
+                  :class="activeSystems.has(sys.key) ? 'bg-[#252578] justify-end' : 'bg-slate-200 justify-start'"
+                  :title="activeSystems.has(sys.key) ? 'Click to disable access' : 'Click to allow access'"
+                >
+                  <span class="w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform" />
+                </button>
               </div>
 
-              <!-- Toggle Button -->
-              <button
-                v-if="sys.available"
-                type="button"
-                @click="toggleSystemAccess(sys.key)"
-                class="w-11 h-6 rounded-full flex items-center p-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-[#252578]/20 shrink-0"
-                :class="activeSystems.has(sys.key) ? 'bg-[#252578] justify-end' : 'bg-slate-200 justify-start'"
-              >
-                <span class="w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform" />
-              </button>
+              <!-- Name & Status Badge -->
+              <div class="mb-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-bold text-slate-900 text-base leading-tight">{{ sys.name }}</span>
+                  <span
+                    class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0"
+                    :class="sys.available
+                      ? (activeSystems.has(sys.key) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500')
+                      : 'bg-slate-200 text-slate-600'"
+                  >
+                    {{ sys.available ? (activeSystems.has(sys.key) ? 'Allowed' : 'Disabled') : 'Coming Soon' }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 font-medium mt-1 leading-snug line-clamp-1" :title="sys.fullName">
+                  {{ sys.fullName }}
+                </p>
+              </div>
+
+              <!-- Description -->
+              <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                {{ sys.description }}
+              </p>
             </div>
 
-            <!-- Card Body -->
-            <p class="text-xs text-slate-500 leading-relaxed mb-4">
-              {{ sys.description }}
-            </p>
-
             <!-- Card Footer Status -->
-            <div class="pt-3 border-t border-slate-100/80 flex items-center justify-between text-xs">
-              <span class="text-slate-400">Environment Access</span>
+            <div class="pt-3 border-t border-slate-100/80 flex items-center justify-between text-xs mt-auto">
+              <span class="text-slate-400 font-medium">Environment Access</span>
               <span
                 class="font-semibold"
                 :class="activeSystems.has(sys.key) && sys.available ? 'text-[#252578]' : 'text-slate-400'"
@@ -874,7 +855,88 @@ onMounted(() => {
         </div>
 
         <!-- ─────────────────────────────────────────────────────────────────── -->
-        <!-- 4. AUTH & CORE PLATFORM PERMISSIONS                                 -->
+        <!-- 4. TICKETING (TICKETING SYSTEM) PERMISSIONS                         -->
+        <!-- ─────────────────────────────────────────────────────────────────── -->
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 bg-gradient-to-r from-sky-500/5 via-blue-500/5 to-transparent border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-sm">
+                <Ticket :size="18" />
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base font-bold text-slate-900">Ticketing System (TS)</h3>
+                  <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+                    TS
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Internal support helpdesk, issue escalation queues, priority SLAs, and ticket management.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                {{ ticketingPermissions.filter(p => isPermSelected(p.id)).length }} / {{ ticketingPermissions.length }} Enabled
+              </span>
+              <button
+                v-if="ticketingPermissions.length > 0"
+                type="button"
+                @click="toggleEntireSystem(ticketingPermissions)"
+                class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                {{ areAllSelected(ticketingPermissions) ? 'Deselect All TS' : 'Select All TS' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6">
+            <div v-if="ticketingPermissions.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div
+                v-for="perm in ticketingPermissions"
+                :key="perm.id"
+                @click="togglePermission(perm.id)"
+                class="group flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer select-none transition-all duration-200"
+                :class="[
+                  isPermSelected(perm.id)
+                    ? 'bg-sky-50/50 border-sky-300 shadow-xs ring-1 ring-sky-200/50'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                ]"
+              >
+                <div
+                  class="w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors"
+                  :class="[
+                    isPermSelected(perm.id)
+                      ? 'bg-sky-600 border-sky-600 text-white shadow-xs'
+                      : 'bg-white border-slate-300 group-hover:border-slate-400'
+                  ]"
+                >
+                  <Check v-if="isPermSelected(perm.id)" :size="12" stroke-width="3" />
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-slate-900 group-hover:text-sky-700 transition-colors line-clamp-1">
+                    {{ perm.name }}
+                  </p>
+                  <p class="text-[11px] font-mono text-slate-400 truncate mt-0.5">
+                    {{ perm.slug }}
+                  </p>
+                  <p v-if="perm.description" class="text-xs text-slate-500 mt-1 line-clamp-2">
+                    {{ perm.description }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="py-6 text-center text-slate-400 text-sm">
+              No granular Ticketing permissions configured. Subsystem access can be toggled above.
+            </div>
+          </div>
+        </div>
+
+        <!-- ─────────────────────────────────────────────────────────────────── -->
+        <!-- 5. AUTH & CORE PLATFORM PERMISSIONS                                 -->
         <!-- ─────────────────────────────────────────────────────────────────── -->
         <div v-if="authPermissions.length > 0" class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-6 py-4 bg-gradient-to-r from-purple-500/5 to-transparent border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
@@ -949,46 +1011,6 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- ─────────────────────────────────────────────────────────────────── -->
-        <!-- 5. PLACEHOLDER SUBSYSTEMS (HRM & TICKETING)                         -->
-        <!-- ─────────────────────────────────────────────────────────────────── -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- HRM Placeholder -->
-          <div class="bg-slate-50/60 rounded-3xl border border-slate-200/80 p-6 flex items-start gap-4 opacity-75">
-            <div class="w-10 h-10 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-              <Users :size="20" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <h3 class="text-sm font-bold text-slate-700">Human Resource Management (HRM)</h3>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 uppercase tracking-wider">
-                  Placeholder
-                </span>
-              </div>
-              <p class="text-xs text-slate-500 leading-relaxed">
-                HR permissions will be available in an upcoming release. When enabled, this role can be configured with employee lifecycle, shift rosters, and leave approvals.
-              </p>
-            </div>
-          </div>
-
-          <!-- Ticketing Placeholder -->
-          <div class="bg-slate-50/60 rounded-3xl border border-slate-200/80 p-6 flex items-start gap-4 opacity-75">
-            <div class="w-10 h-10 rounded-xl bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-              <Ticket :size="20" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <h3 class="text-sm font-bold text-slate-700">Internal Helpdesk &amp; Ticketing</h3>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 uppercase tracking-wider">
-                  Placeholder
-                </span>
-              </div>
-              <p class="text-xs text-slate-500 leading-relaxed">
-                Ticketing queue permissions will be available in an upcoming release. Role holders will manage ticket escalations, SLA statuses, and helpdesk responses.
-              </p>
-            </div>
-          </div>
-        </div>
 
       </div>
     </template>

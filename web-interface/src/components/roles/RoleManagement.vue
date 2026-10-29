@@ -11,6 +11,7 @@ import type { Role } from '@/types'
 import RolesTable from './RolesTable.vue'
 import RoleFormModal from './RoleFormModal.vue'
 import RoleUsersModal from './RoleUsersModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const {
   roles,
@@ -67,12 +68,27 @@ const handleSubmit = async (payload: { id: number | null, name: string, descript
   }
 }
 
-const handleDelete = async (id: number) => {
-  if (!confirm('Are you sure you want to delete this role? This action cannot be undone.')) return
+// ── Delete Confirmation ──────────────────────────────────────────────────────
+const showDeleteModal = ref(false)
+const roleToDelete = ref<Role | null>(null)
+const isDeletingRole = ref(false)
 
-  const result = await deleteRole(id)
-  if (!result.success) {
-    alert(result.message)
+const handleDelete = (id: number) => {
+  const role = roles.value.find(r => r.id === id)
+  if (!role) return
+  roleToDelete.value = role
+  showDeleteModal.value = true
+}
+
+const handleConfirmDelete = async () => {
+  if (!roleToDelete.value) return
+  isDeletingRole.value = true
+  try {
+    await deleteRole(roleToDelete.value.id)
+  } finally {
+    isDeletingRole.value = false
+    showDeleteModal.value = false
+    roleToDelete.value = null
   }
 }
 
@@ -176,5 +192,20 @@ watch(filters, () => {
       :users="roleUsers"
       :loading="loadingUsers"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :show="showDeleteModal"
+      title="Delete Role"
+      confirm-label="Delete"
+      variant="danger"
+      :is-submitting="isDeletingRole"
+      @close="showDeleteModal = false"
+      @confirm="handleConfirmDelete"
+    >
+      <p>
+        Are you sure you want to permanently delete the role <strong class="font-bold text-slate-800">'{{ roleToDelete?.name }}'</strong>? This action cannot be undone and the record data will be removed from the system.
+      </p>
+    </ConfirmModal>
   </div>
 </template>
